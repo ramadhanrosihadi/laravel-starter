@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\AvatarRequest;
 use App\Http\Requests\Api\V1\ChangePasswordRequest;
 use App\Http\Requests\Api\V1\LoginRequest;
 use App\Http\Requests\Api\V1\RefreshTokenRequest;
@@ -10,6 +11,7 @@ use App\Http\Requests\Api\V1\UpdateProfileRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
 use App\Services\Auth\AuthService;
+use App\Services\FileUploadService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +20,10 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly AuthService $authService) {}
+    public function __construct(
+        private readonly AuthService $authService,
+        private readonly FileUploadService $fileUploadService,
+    ) {}
 
     /**
      * @unauthenticated
@@ -79,6 +84,24 @@ class AuthController extends Controller
         ]);
 
         return ApiResponse::success(null, 'Password changed');
+    }
+
+    public function uploadAvatar(AvatarRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        // Delete old avatar before storing the new one
+        $this->fileUploadService->delete($user->avatar);
+
+        $path = $this->fileUploadService->upload(
+            $request->file('avatar'),
+            'avatars/'.$user->getKey(),
+        );
+
+        $user->update(['avatar' => $path]);
+
+        return ApiResponse::success(new UserResource($user->refresh()), 'Avatar updated');
     }
 
     public function logout(Request $request): JsonResponse
