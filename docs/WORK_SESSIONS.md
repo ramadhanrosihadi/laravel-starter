@@ -34,15 +34,17 @@ Rencana pembagian sesi kerja untuk implementasi Laravel Starter via Claude Code.
 8. **Seeder & factory dasar:** `DatabaseSeeder`, `AdminUserSeeder` (placeholder admin), factory untuk `User` dan `Category`.
 9. Endpoint health-check: `GET /api/v1/health` → `{ success: true, data: { status: "ok" } }` (untuk verifikasi envelope & routing).
 
-**Output / Deliverable:**
-- [ ] `composer install && php artisan migrate --seed` berjalan tanpa error pada PostgreSQL.
-- [ ] `GET /api/v1/health` mengembalikan envelope JSON standar.
-- [ ] Struktur direktori sesuai ARCHITECTURE.md.
-- [ ] Pint & Larastan jalan tanpa error.
-- [ ] `.env.example` lengkap.
-- [ ] **Di-commit & di-push** ke `origin` sesuai [CONTRIBUTING.md](../CONTRIBUTING.md).
+**Output / Deliverable:** ✅ **SELESAI** (2026-05-22)
+- [x] `composer install && php artisan migrate --seed` berjalan tanpa error pada PostgreSQL.
+- [x] `GET /api/v1/health` mengembalikan envelope JSON standar (404 route tak dikenal juga ber-envelope).
+- [x] Struktur direktori sesuai ARCHITECTURE.md.
+- [x] Pint & Larastan jalan tanpa error (Larastan level 5; `composer analyse` pakai `--memory-limit=1G`).
+- [x] `.env.example` lengkap.
+- [x] **Di-commit & di-push** ke `origin` sesuai [CONTRIBUTING.md](../CONTRIBUTING.md).
 
-**File dibuat/diubah:** `composer.json`, `.env.example`, `config/database.php`, `app/Support/ApiResponse.php`, `app/Http/Middleware/ForceJsonResponse.php`, `app/Exceptions/Handler.php` (atau `bootstrap/app.php` di L11+), `routes/api.php`, migrasi awal, seeder, factory, `pint.json`, `phpstan.neon`.
+**File dibuat/diubah:** `composer.json`, `.env.example`, `config/database.php` & `config/permission.php`, `app/Support/ApiResponse.php`, `app/Http/Middleware/ForceJsonResponse.php`, `bootstrap/app.php` (exception rendering + routing + middleware), `routes/api.php`, `app/Http/Controllers/Api/V1/HealthController.php`, migrasi awal (users +`is_active`, permission tables, categories), `app/Models/{User,Category}.php`, `database/factories/CategoryFactory.php`, seeder (`AdminUserSeeder`, `CategorySeeder`, `DatabaseSeeder`), `pint.json`, `phpstan.neon`, `phpunit.xml` (test DB pgsql), tests (`HealthTest`, `DatabaseSmokeTest`).
+
+> **Catatan implementasi:** versi terpasang **Laravel 13.11** (Laravel 13 sudah stable). Test memakai database PostgreSQL terpisah `laravel_starter_test` (bukan sqlite `:memory:`) karena PHP lokal tanpa driver SQLite. PHP yang dipakai `C:\php8.3.6` (default PATH masih 7.4).
 
 ---
 
