@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\User;
+use App\Services\FileUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,10 +17,16 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $avatarUrl = null;
+        if ($this->avatar !== null) {
+            $avatarUrl = app(FileUploadService::class)->url($this->avatar);
+        }
+
         return [
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
+            'avatar_url' => $avatarUrl,
             'is_active' => $this->is_active,
             'roles' => $this->getRoleNames()->values(),
             'permissions' => $this->getAllPermissions()->pluck('name')->values(),
