@@ -18,6 +18,11 @@ use UnitEnum;
 
 class SendNotificationPage extends Page
 {
+    public static function canAccess(): bool
+    {
+        return auth()->user()->can('notifications.create');
+    }
+
     protected string $view = 'filament.pages.send-notification';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBellAlert;

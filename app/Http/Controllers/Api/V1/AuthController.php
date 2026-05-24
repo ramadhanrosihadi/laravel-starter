@@ -7,12 +7,14 @@ use App\Http\Requests\Api\V1\AvatarRequest;
 use App\Http\Requests\Api\V1\ChangePasswordRequest;
 use App\Http\Requests\Api\V1\LoginRequest;
 use App\Http\Requests\Api\V1\RefreshTokenRequest;
+use App\Http\Requests\Api\V1\RegisterRequest;
 use App\Http\Requests\Api\V1\UpdateProfileRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
 use App\Services\Auth\AuthService;
 use App\Services\FileUploadService;
 use App\Support\ApiResponse;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -24,6 +26,30 @@ class AuthController extends Controller
         private readonly AuthService $authService,
         private readonly FileUploadService $fileUploadService,
     ) {}
+
+    /**
+     * @unauthenticated
+     */
+    public function register(RegisterRequest $request): JsonResponse
+    {
+        $user = User::create([
+            'name' => $request->string('name')->toString(),
+            'email' => $request->string('email')->toString(),
+            'password' => $request->string('password')->toString(),
+        ]);
+
+        event(new Registered($user));
+
+        $tokens = $this->authService->login(
+            $request->string('email')->toString(),
+            $request->string('password')->toString(),
+            $request->only(['device_id', 'platform', 'os_version', 'app_version', 'device_name', 'push_token']),
+        );
+
+        $tokens['email_verified'] = false;
+
+        return ApiResponse::success($tokens, 'Registration successful', 201);
+    }
 
     /**
      * @unauthenticated

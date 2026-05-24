@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\OtpController;
+use App\Http\Controllers\Api\V1\PasswordResetController;
+use App\Support\ApiResponse;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -25,8 +27,17 @@ Route::prefix('v1')->group(function (): void {
     });
 
     Route::prefix('auth')->group(function (): void {
+        Route::post('register', [AuthController::class, 'register'])->middleware(['throttle:6,1', 'check.maintenance']);
         Route::post('login', [AuthController::class, 'login'])->middleware(['throttle:6,1', 'check.maintenance']);
         Route::post('refresh', [AuthController::class, 'refresh'])->middleware(['throttle:6,1', 'check.maintenance']);
+        Route::post('forgot-password', [PasswordResetController::class, 'sendResetLink'])
+            ->middleware(['throttle:6,1', 'check.maintenance']);
+        Route::post('reset-password', [PasswordResetController::class, 'reset'])
+            ->middleware(['throttle:6,1', 'check.maintenance']);
+        Route::get('password/reset/{token}', function (string $token) {
+            return ApiResponse::success(['token' => $token], 'Password reset token received.');
+        })->name('password.reset')->middleware(['check.maintenance']);
+
 
         Route::get('email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
             ->name('verification.verify')

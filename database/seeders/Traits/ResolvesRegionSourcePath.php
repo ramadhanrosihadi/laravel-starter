@@ -11,9 +11,9 @@ trait ResolvesRegionSourcePath
     protected function getRegionPath(string $relativePath): string
     {
         if (app()->environment('testing')) {
-            return base_path('tests/Fixtures/regions/' . $relativePath);
+            return base_path('tests/Fixtures/regions/'.$relativePath);
         }
 
-        return storage_path('app/regions/' . $relativePath);
+        return storage_path('app/regions/'.$relativePath);
     }
 }

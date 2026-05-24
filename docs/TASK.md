@@ -256,7 +256,7 @@ Berdasarkan hasil tinjauan mendalam terhadap Laravel Starter Project, telah diid
 
 ### [CF-014] Filament Resource Tidak Enforce RBAC Per-Resource
 
-- **Status:** `[ ]` Belum dikerjakan
+- **Status:** `[x]` Selesai
 - **Prioritas:** 🔥 Critical
 - **Estimasi Effort:** M (4-6 jam)
 - **Sumber:** `docs/review/03_best_practice.md` §D, `docs/review/06_priority_areas.md` §4.2, `docs/review/07_action_plan.md` §A.4
@@ -264,18 +264,17 @@ Berdasarkan hasil tinjauan mendalam terhadap Laravel Starter Project, telah diid
 - **Masalah:**
   Setelah user masuk panel (via `canAccessPanel()`), mereka bisa mengakses semua resource. Role `staff` yang seharusnya hanya bisa akses Category, bisa melihat Users dan Roles di sidebar. Tidak ada per-resource permission enforcement.
 - **Aksi yang harus dilakukan:**
-  - [ ] Evaluasi pendekatan: Install `bezhansalleh/filament-shield` ATAU override manual `canViewAny()`, `canCreate()`, `canEdit()`, `canDelete()` di setiap resource.
-  - [ ] Jika Shield: `composer require bezhansalleh/filament-shield`, `php artisan shield:install`, `php artisan shield:generate --all`.
-  - [ ] Jika manual: Override static methods di setiap Resource class (User, Role, Category, AppConfig, AppVersion) menggunakan Spatie permission checks.
-  - [ ] Update `RolePermissionSeeder` jika perlu tambahkan permission baru.
-  - [ ] Update back-office test (`tests/Feature/BackOffice/`) untuk memvalidasi bahwa role `staff` TIDAK bisa akses resource User/Role.
+  - [x] Evaluasi pendekatan: Install `bezhansalleh/filament-shield` ATAU override manual `canViewAny()`, `canCreate()`, `canEdit()`, `canDelete()` di setiap resource.
+  - [x] Jika manual: Override static methods di setiap Resource class (User, Role, Category, AppConfig, AppVersion) menggunakan Spatie permission checks.
+  - [x] Update `RolePermissionSeeder` jika perlu tambahkan permission baru.
+  - [x] Update back-office test (`tests/Feature/BackOffice/`) untuk memvalidasi bahwa role `staff` TIDAK bisa akses resource User/Role.
 - **Kriteria selesai:** User dengan role `staff` hanya bisa melihat dan mengakses resource yang diizinkan (e.g. Category) di sidebar Filament. Resource yang tidak diizinkan tersembunyi.
 
 ---
 
 ### [CF-015] Unit Test untuk Service Layer Kosong
 
-- **Status:** `[ ]` Belum dikerjakan
+- **Status:** `[x]` Selesai
 - **Prioritas:** 🔥 Critical
 - **Estimasi Effort:** M (6-8 jam)
 - **Sumber:** `docs/review/03_best_practice.md` §E, `docs/review/06_priority_areas.md` §5.2, `docs/review/07_action_plan.md` §A.5
@@ -283,12 +282,12 @@ Berdasarkan hasil tinjauan mendalam terhadap Laravel Starter Project, telah diid
 - **Masalah:**
   `AuthService`, `OtpService`, `PushNotificationService`, `FileUploadService` tidak ditest secara isolasi. Bug dalam logika bisnis kritis (token issuance, OTP verification, push notification) hanya terdeteksi via feature test yang lebih lambat dan kurang presisi.
 - **Aksi yang harus dilakukan:**
-  - [ ] Buat `tests/Unit/Services/AuthServiceTest.php` — test login, refresh, logout, revoke, device upsert, issueTokenForUser.
-  - [ ] Buat `tests/Unit/Services/OtpServiceTest.php` — test OTP generation, verification, expiry, max attempts, rate limiting.
-  - [ ] Buat `tests/Unit/Services/PushNotificationServiceTest.php` — test send notification, FCM driver interface, LogFcmDriver fallback.
-  - [ ] Buat `tests/Unit/Services/FileUploadServiceTest.php` — test file upload, delete, path generation.
-  - [ ] Gunakan mocking (Mockery) untuk isolasi dari database dan external services.
-  - [ ] Jalankan `php artisan test --testsuite=Unit` untuk memvalidasi.
+  - [x] Buat `tests/Unit/Services/AuthServiceTest.php` — test login, refresh, logout, revoke, device upsert, issueTokenForUser.
+  - [x] Buat `tests/Unit/Services/OtpServiceTest.php` — test OTP generation, verification, expiry, max attempts, rate limiting.
+  - [x] Buat `tests/Unit/Services/PushNotificationServiceTest.php` — test send notification, FCM driver interface, LogFcmDriver fallback.
+  - [x] Buat `tests/Unit/Services/FileUploadServiceTest.php` — test file upload, delete, path generation.
+  - [x] Gunakan mocking (Mockery) untuk isolasi dari database dan external services.
+  - [x] Jalankan `php artisan test --testsuite=Unit` untuk memvalidasi.
 - **Kriteria selesai:** Minimal 4 unit test class tersedia di `tests/Unit/Services/` dengan coverage logika bisnis inti. Unit test suite berjalan kurang dari 5 detik.
 
 ---
@@ -299,26 +298,26 @@ Berdasarkan hasil tinjauan mendalam terhadap Laravel Starter Project, telah diid
 
 ### [CF-016] Tidak Ada Endpoint User Registration (API)
 
-- **Status:** `[ ]` Belum dikerjakan
+- **Status:** `[x]` Selesai
 - **Prioritas:** ⚠️ Penting
 - **Estimasi Effort:** M (4-6 jam)
 - **Sumber:** `docs/review/05_feature_completeness.md` §A, `docs/review/07_action_plan.md` §B.2
 - **Lokasi di kode:** `app/Http/Controllers/Api/V1/AuthController.php`, `routes/api.php`
 - **Masalah:**
-  Tidak ada endpoint register mandiri. User hanya bisa dibuat via admin panel atau seeder. Ini merupakan fitur fundamental yang hilang untuk aplikasi mobile.
+  Tidak ada endpoint register mandiri. User hanya bisa dibuat via admin panel or seeder. Ini merupakan fitur fundamental yang hilang untuk aplikasi mobile.
 - **Aksi yang harus dilakukan:**
-  - [ ] Buat `RegisterRequest` form request dengan validasi name, email, password, password_confirmation.
-  - [ ] Tambahkan method `register()` di `AuthController` atau buat `RegisterController` terpisah.
-  - [ ] Tambahkan route `POST /api/v1/auth/register` dengan rate limiting (`throttle:6,1`).
-  - [ ] Integrasikan dengan email verification flow (CF-011).
-  - [ ] Buat feature test `tests/Feature/Api/RegistrationTest.php`.
+  - [x] Buat `RegisterRequest` form request dengan validasi name, email, password, password_confirmation.
+  - [x] Tambahkan method `register()` di `AuthController` atau buat `RegisterController` terpisah.
+  - [x] Tambahkan route `POST /api/v1/auth/register` dengan rate limiting (`throttle:6,1`).
+  - [x] Integrasikan dengan email verification flow (CF-011).
+  - [x] Buat feature test `tests/Feature/Api/RegistrationTest.php`.
 - **Kriteria selesai:** User bisa self-register via API, mendapat token, dan (opsional) perlu verifikasi email.
 
 ---
 
 ### [CF-017] Tidak Ada Endpoint Password Reset via API
 
-- **Status:** `[ ]` Belum dikerjakan
+- **Status:** `[x]` Selesai
 - **Prioritas:** ⚠️ Penting
 - **Estimasi Effort:** M (4-6 jam)
 - **Sumber:** `docs/review/05_feature_completeness.md` §A, `docs/review/07_action_plan.md` §B.3
@@ -326,11 +325,11 @@ Berdasarkan hasil tinjauan mendalam terhadap Laravel Starter Project, telah diid
 - **Masalah:**
   Hanya ada `changePassword` yang memerlukan login. Tidak ada "forgot password" / "reset password" flow untuk mobile user yang lupa password.
 - **Aksi yang harus dilakukan:**
-  - [ ] Buat endpoint `POST /api/v1/auth/forgot-password` — kirim reset link/token via email.
-  - [ ] Buat endpoint `POST /api/v1/auth/reset-password` — validasi token dan reset password.
-  - [ ] Buat Form Request untuk masing-masing endpoint.
-  - [ ] Gunakan Laravel built-in `Password::sendResetLink()` dan `Password::reset()`.
-  - [ ] Buat feature test `tests/Feature/Api/PasswordResetTest.php`.
+  - [x] Buat endpoint `POST /api/v1/auth/forgot-password` — kirim reset link/token via email.
+  - [x] Buat endpoint `POST /api/v1/auth/reset-password` — validasi token dan reset password.
+  - [x] Buat Form Request untuk masing-masing endpoint.
+  - [x] Gunakan Laravel built-in `Password::sendResetLink()` dan `Password::reset()`.
+  - [x] Buat feature test `tests/Feature/Api/PasswordResetTest.php`.
 - **Kriteria selesai:** User bisa request password reset via email dan mengatur password baru tanpa login.
 
 ---
@@ -645,16 +644,16 @@ Daftar cepat untuk tracking progress:
 - [x] CF-009 — Model Factories Lengkap
 - [x] CF-010 — Branding Filament Premium
 
-### 🔥 Kritis — Wajib Sebelum Produksi (3/5)
+### 🔥 Kritis — Wajib Sebelum Produksi (5/5)
 - [x] CF-011 — Aktifkan Email Verification
 - [x] CF-012 — Test Menggunakan PostgreSQL (bukan SQLite)
 - [x] CF-013 — Buat File LICENSE
-- [ ] CF-014 — Filament RBAC Per-Resource
-- [ ] CF-015 — Unit Test Service Layer
+- [x] CF-014 — Filament RBAC Per-Resource
+- [x] CF-015 — Unit Test Service Layer
 
-### ⚠️ Sprint 1 — Perbaikan Penting (0/9)
-- [ ] CF-016 — Endpoint User Registration API
-- [ ] CF-017 — Endpoint Password Reset API
+### ⚠️ Sprint 1 — Perbaikan Penting (2/9)
+- [x] CF-016 — Endpoint User Registration API
+- [x] CF-017 — Endpoint Password Reset API
 - [ ] CF-018 — Endpoint Logout All Devices
 - [ ] CF-019 — Buat SECURITY.md
 - [ ] CF-020 — ERD Diagram Database
@@ -706,14 +705,12 @@ Daftar cepat untuk tracking progress:
 
 ## Catatan Riwayat Eksekusi (Footer Note)
 
-*Terakhir dijalankan/diperbarui pada:* `2026-05-24 18:11:38`
+*Terakhir dijalankan/diperbarui pada:* `2026-05-24 18:44:00`
 *Daftar task yang di-generate/diperbarui pada eksekusi terakhir:*
-- **[CF-001 s/d CF-013]** — Dipertahankan (status: selesai) ✅
-- **[CF-013]** — 🔥 Buat File LICENSE *(selesai)* ✅
-- **[CF-014]** — 🔥 Filament RBAC Per-Resource *(belum dikerjakan)*
-- **[CF-015]** — 🔥 Unit Test Service Layer *(belum dikerjakan)*
-- **[CF-016]** — ⚠️ Endpoint User Registration *(belum dikerjakan)*
-- **[CF-017]** — ⚠️ Endpoint Password Reset *(belum dikerjakan)*
+- **[CF-001 s/d CF-014]** — Dipertahankan (status: selesai) ✅
+- **[CF-015]** — 🔥 Unit Test Service Layer *(selesai)* ✅
+- **[CF-016]** — ⚠️ Endpoint User Registration *(selesai)* ✅
+- **[CF-017]** — ⚠️ Endpoint Password Reset *(selesai)* ✅
 - **[CF-018]** — ⚠️ Endpoint Logout All Devices *(belum dikerjakan)*
 - **[CF-019]** — ⚠️ Buat SECURITY.md *(belum dikerjakan)*
 - **[CF-020]** — ⚠️ ERD Diagram Database *(belum dikerjakan)*
