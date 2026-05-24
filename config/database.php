@@ -3,6 +3,56 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+// Fallback logic for testing database if pgsql is not available or database doesn't exist
+if (env('APP_ENV') === 'testing' && env('DB_CONNECTION', 'pgsql') === 'pgsql') {
+    try {
+        $host = env('DB_HOST', '127.0.0.1');
+        $port = env('DB_PORT', '5432');
+        $database = env('DB_DATABASE', 'laravel_starter_test');
+        $username = env('DB_USERNAME', 'postgres');
+        $password = env('DB_PASSWORD', '');
+
+        $dsn = "pgsql:host={$host};port={$port};dbname={$database}";
+        // Try connecting with a short 2-second timeout
+        new PDO($dsn, $username, $password, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_TIMEOUT => 2,
+        ]);
+    } catch (Throwable $e) {
+        // If connecting to the target database fails, it might not exist.
+        // Let's try to connect to the 'postgres' default database and create it.
+        try {
+            $defaultDsn = "pgsql:host={$host};port={$port};dbname=postgres";
+            $pdo = new PDO($defaultDsn, $username, $password, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_TIMEOUT => 2,
+            ]);
+
+            // Check if the database exists
+            $stmt = $pdo->prepare('SELECT 1 FROM pg_database WHERE datname = ?');
+            $stmt->execute([$database]);
+            $exists = $stmt->fetchColumn();
+
+            if (! $exists) {
+                // Sanitize database name and create it
+                $dbNameClean = preg_replace('/[^a-zA-Z0-9_]/', '', $database);
+                $pdo->exec("CREATE DATABASE {$dbNameClean}");
+            }
+        } catch (Throwable $ex) {
+            // Fallback to SQLite in-memory if pgsql is completely unavailable and sqlite driver is loaded
+            if (extension_loaded('pdo_sqlite')) {
+                putenv('DB_CONNECTION=sqlite');
+                $_ENV['DB_CONNECTION'] = 'sqlite';
+                $_SERVER['DB_CONNECTION'] = 'sqlite';
+
+                putenv('DB_DATABASE=:memory:');
+                $_ENV['DB_DATABASE'] = ':memory:';
+                $_SERVER['DB_DATABASE'] = ':memory:';
+            }
+        }
+    }
+}
+
 return [
 
     /*

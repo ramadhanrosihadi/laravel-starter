@@ -9,7 +9,7 @@ class DistrictSeeder extends Seeder
 {
     public function run(): void
     {
-        $path = storage_path('app/regions/emsifa/districts.json');
+        $path = $this->getSourcePath('emsifa/districts.json');
 
         if (! file_exists($path)) {
             $this->command->error('emsifa/districts.json not found. Run: php artisan regions:download');
@@ -61,5 +61,18 @@ class DistrictSeeder extends Seeder
         }
 
         $this->command->info("  Districts (kecamatan) seeded: {$count}");
+    }
+
+    /**
+     * Returns the base directory for region source data.
+     * In testing environment, redirects to test fixtures.
+     */
+    protected function getSourcePath(string $relative): string
+    {
+        if (app()->environment('testing')) {
+            return base_path("tests/Fixtures/regions/{$relative}");
+        }
+
+        return storage_path("app/regions/{$relative}");
     }
 }

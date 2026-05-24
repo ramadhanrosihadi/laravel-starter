@@ -1,129 +1,167 @@
-# Kesiapan sebagai Starter Project
+# 01 — Kesiapan sebagai Starter Project
 
-Dokumen ini menganalisis kesiapan proyek **Laravel Starter** untuk digunakan sebagai kerangka kerja awal (starter pack) pada proyek baru, khususnya untuk kebutuhan SaaS/Multi-tenant dan mobile backend.
+> Dokumen ini menilai apakah Laravel Starter Project ini siap digunakan sebagai fondasi project baru.
+> Direview: 2026-05-24 | Reviewer: Antigravity AI Agent
 
 ---
 
 ## A. Setup & Instalasi
 
-### 1. Apakah `.env.example` lengkap dan terdokumentasi dengan baik?
-- **Status**: ✅ Ada & Sangat Lengkap
-- **Temuan Spesifik**: File [.env.example](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/.env.example) mencakup semua variabel yang diperlukan untuk operasional proyek, termasuk konfigurasi PostgreSQL, Passport (`PASSPORT_PASSWORD_CLIENT_ID` dan `PASSPORT_PASSWORD_CLIENT_SECRET`), Firebase/FCM (`FIREBASE_CREDENTIALS`), dan fitur opsional seeder wilayah (`SEED_REGIONS`).
-- **Rekomendasi**: Tambahkan komentar penjelas singkat di dalam berkas `.env.example` untuk memandu developer dalam membuat Client ID & Secret Passport.
+### ✅ `.env.example` lengkap dan terdokumentasi dengan baik
+- **Status:** ✅ Ada
+- **Temuan:** File `.env.example` (95 baris) sangat lengkap. Setiap section memiliki komentar yang jelas, termasuk instruksi untuk Passport client setup, Firebase credentials, SMS provider, dan region seeder opt-in.
+- **Highlight:** Komentar `PASSPORT_PASSWORD_CLIENT_ID` mencakup instruksi lengkap cara generate (`php artisan passport:client --password`).
+- **File:** `.env.example` baris 31-41
 
-### 2. Apakah ada `README.md` dengan instruksi instalasi yang jelas?
-- **Status**: ✅ Ada
-- **Temuan Spesifik**: File [README.md](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/README.md) menyediakan langkah-langkah setup awal yang sangat terstruktur, termasuk cara registrasi user admin default dan instruksi pengujian.
-- **Rekomendasi**: Tambahkan instruksi spesifik mengenai cara membuat file kredensial Firebase (`firebase-service-account.json`) dan cara pembuatan database pengujian (`laravel_starter_test`).
+### ✅ `README.md` dengan instruksi instalasi yang jelas
+- **Status:** ✅ Ada
+- **Temuan:** `README.md` (162 baris) menyediakan dua opsi instalasi (Lokal & Docker/Sail) dengan langkah-langkah terperinci. Termasuk warning box untuk Passport client setup, endpoint referensi, dan instruksi testing.
+- **File:** `README.md` baris 52-136
 
-### 3. Apakah ada `Makefile` atau script setup otomatis?
-- **Status**: ✅ Ada (script Composer kustom)
-- **Temuan Spesifik**: Berkas [composer.json](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/composer.json) memiliki perintah `"setup"` di baris 47-54 yang mengotomatisasi instalasi dependensi, penyalinan `.env`, pembuatan app key, migrasi database, dan build frontend.
-- **Rekomendasi**: Sangat baik. Sebagai alternatif, penambahan `Makefile` atau script shell `setup.sh` akan mempermudah eksekusi bagi developer yang menyukai shorthand command.
+### ✅ Script setup otomatis
+- **Status:** ✅ Ada
+- **Temuan:** `composer.json` menyediakan beberapa script berguna:
+  - `composer setup` — install, env copy, key generate, migrate, npm build
+  - `composer dev` — concurrent: artisan serve, queue:listen, pail, vite
+  - `composer test` — config:clear + artisan test
+  - `composer lint` — pint
+  - `composer analyse` — phpstan
+- **File:** `composer.json` baris 47-69
+- 💡 **Rekomendasi:** Tidak ada `Makefile` — pertimbangkan menambahkan `Makefile` sebagai wrapper ringkas untuk developer yang familiar dengan `make` command.
 
-### 4. Apakah `composer.json` dan `package.json` bersih (tidak ada package tidak terpakai)?
-- **Status**: ✅ Bersih
-- **Temuan Spesifik**: Dependensi seperti `dedoc/scramble` (dokumentasi API), `kreait/laravel-firebase` (FCM), `laravel/passport` (Auth), dan `spatie/laravel-permission` (RBAC) semuanya aktif digunakan di dalam kode. Tidak ditemukan package "sampah".
-- **Rekomendasi**: Pertahankan kebersihan ini dengan melakukan audit berkala menggunakan `composer-unused` jika diperlukan di masa depan.
+### ✅ `composer.json` dan `package.json` bersih
+- **Status:** ✅ Ada
+- **Temuan:** Semua package di `composer.json` terpakai dan relevan. Tidak ada package orphan.
+  - **Production:** Laravel 13.x, Passport 13.x, Filament 5.x, Spatie Permission 7.x, Spatie Query Builder 7.x, Scramble, Firebase
+  - **Dev:** Faker, Larastan, Pail, Pao, Pint, Sail, Mockery, Collision, PHPUnit
+- ⚠️ **Catatan minor:** `pestphp/pest-plugin` ada di `allow-plugins` tapi Pest tidak digunakan (project menggunakan PHPUnit). Ini bawaan Laravel template dan tidak berbahaya.
+- **File:** `composer.json`
 
-### 5. Apakah ada konfigurasi Docker/Sail untuk development?
-- **Status**: ❌ Tidak Ada
-- **Temuan Spesifik**: Tidak ditemukan berkas `docker-compose.yml` maupun `docker/` folder. Developer harus menginstal PHP 8.3 dan PostgreSQL secara lokal secara manual.
-- **Rekomendasi**: Tambahkan **Laravel Sail** (`laravel/sail`) sebagai dependensi dev agar developer dapat mengaktifkan environment PostgreSQL & Redis hanya dengan perintah `./vendor/bin/sail up -d`.
+### ✅ Konfigurasi Docker/Sail untuk development
+- **Status:** ✅ Ada
+- **Temuan:** `compose.yaml` (83 baris) mengonfigurasi:
+  - **PHP 8.3** runtime (via Sail image)
+  - **PostgreSQL 18** (Alpine) dengan healthcheck
+  - **Redis** (Alpine) dengan healthcheck
+  - **Mailpit** untuk testing email
+- **File:** `compose.yaml`
 
 ---
 
 ## B. Database & Migrations
 
-### 1. Apakah semua migration sudah terurut dan konsisten?
-- **Status**: ✅ Sangat Konsisten
-- **Temuan Spesifik**: Seluruh file migrasi di [database/migrations/](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/database/migrations) disusun menggunakan timestamp yang teratur. Tabel fondasi (`users`, `permissions`, `categories`) terbuat lebih dahulu sebelum tabel relasional dependen (`user_devices`, `notifications`, `otp_codes`).
-- **Rekomendasi**: Tidak ada tindakan yang diperlukan. Pola ini sudah sangat baik.
+### ✅ Semua migration sudah terurut dan konsisten
+- **Status:** ✅ Ada
+- **Temuan:** 18 migration files, terurut secara kronologis:
+  1. `0001_01_01_*` — Laravel defaults (users, cache, jobs)
+  2. `2026_05_22_*` — Permission tables, Categories, OAuth tables (5 file), Regions
+  3. `2026_05_23_*` — UserDevices, AppVersions, AppConfigs, Avatar, Notifications, Phone, OtpCodes
+- Naming konsisten mengikuti konvensi Laravel.
+- **File:** `database/migrations/`
 
-### 2. Apakah ada Seeder yang berguna untuk development?
-- **Status**: ✅ Sangat Lengkap
-- **Temuan Spesifik**: Terdapat seeder esensial:
-  - `RolePermissionSeeder` untuk menyuntikkan roles & permissions dasar.
-  - `AdminUserSeeder` untuk membuat admin awal secara langsung.
-  - `AppConfigSeeder` untuk inisialisasi status maintenance dan file flags.
-  - `RegionSeeder` untuk memuat data wilayah dunia dan Indonesia secara lengkap.
-- **Rekomendasi**: Tambahkan log CLI (output console) pada `RegionSeeder` untuk menginformasikan proses seeding karena volume data wilayah sangat besar (±245k records).
+### ✅ Seeder berguna untuk development
+- **Status:** ✅ Ada
+- **Temuan:** `DatabaseSeeder` memanggil 4 seeder utama + optional Region seeder:
+  - `RolePermissionSeeder` — 3 role (super-admin, admin, staff) + 15 permission (5 abilities × 3 resources)
+  - `AdminUserSeeder` — akun `admin@example.com` / `password` (super-admin)
+  - `CategorySeeder` — sample categories
+  - `AppConfigSeeder` — konfigurasi default (maintenance_mode, app_name, dll.)
+  - Region seeder (opt-in via `SEED_REGIONS=true`) — ~245k records Indonesia
+- **File:** `database/seeders/DatabaseSeeder.php`
 
-### 3. Apakah ada Factory untuk semua Model utama?
-- **Status**: ⚠️ Sebagian
-- **Temuan Spesifik**: Proyek menyediakan `UserFactory` dan `CategoryFactory`. Namun, model-model sekunder seperti `UserDevice`, `AppConfig`, `AppVersion`, `Notification`, dan `OtpCode` belum memiliki factory khusus untuk kebutuhan testing cepat.
-- **Rekomendasi**: Generate factory untuk semua model utama melalui perintah `php artisan make:factory` agar pengujian di masa depan lebih deklaratif.
+### ✅ Factory untuk semua Model utama
+- **Status:** ✅ Ada
+- **Temuan:** 7 factory tersedia untuk semua model:
+  - `UserFactory`, `CategoryFactory`, `AppConfigFactory`, `AppVersionFactory`, `NotificationFactory`, `OtpCodeFactory`, `UserDeviceFactory`
+- **File:** `database/factories/`
 
-### 4. Apakah migration menggunakan tipe kolom yang tepat?
-- **Status**: ✅ Sangat Baik
-- **Temuan Spesifik**: 
-  - `is_active` dan `force_update` menggunakan boolean.
-  - `user_devices.id` dan `notifications.id` menggunakan tipe **ULID** (`HasUlids`) yang sangat cocok untuk performa database PostgreSQL skala besar.
-  - `regions.meta` menggunakan tipe data **jsonb** pada PostgreSQL untuk query dinamis yang cepat.
-- **Rekomendasi**: Pertahankan penggunaan ULID dan jsonb yang sudah sangat baik ini.
+### ✅ Migration menggunakan tipe kolom yang tepat
+- **Status:** ✅ Ada
+- **Temuan:** Penggunaan tipe kolom sesuai:
+  - Boolean: `is_active`, `maintenance_mode`
+  - Timestamp: `email_verified_at`, `phone_verified_at`, `last_active_at`, `expires_at`, `used_at`, `read_at`
+  - ULID: `UserDevice.id`, `Notification.id` (via HasUlids)
+  - Enum cast: `DevicePlatform`, `AppConfigType`, `OtpPurpose`
+  - SoftDeletes: `Category`
 
 ---
 
 ## C. Konfigurasi Awal
 
-### 1. Apakah ada konfigurasi timezone yang benar?
-- **Status**: ✅ Ada
-- **Temuan Spesifik**: File [config/app.php](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/config/app.php#L68) diset menggunakan default `'timezone' => 'UTC'`, yang merupakan *best practice* mutlak untuk aplikasi global/mobile, di mana konversi lokal diserahkan ke sisi klien (Flutter).
-- **Rekomendasi**: Pertahankan UTC di server.
+### ✅ Konfigurasi timezone yang benar
+- **Status:** ✅ Ada
+- **Temuan:** `config/app.php` baris 68: `'timezone' => 'UTC'` — best practice untuk API yang melayani multiple timezone.
+- **File:** `config/app.php`
 
-### 2. Apakah ada konfigurasi locale/bahasa?
-- **Status**: ✅ Ada
-- **Temuan Spesifik**: Di [config/app.php](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/config/app.php#L81) locale dikonfigurasi menggunakan `'locale' => env('APP_LOCALE', 'en')`.
-- **Rekomendasi**: Tambahkan file lokalisasi Bahasa Indonesia (`lang/id/`) jika starter project ini utamanya ditargetkan untuk pasar lokal.
+### ✅ Konfigurasi locale/bahasa
+- **Status:** ✅ Ada
+- **Temuan:** Locale dikonfigurasi via environment variables (`APP_LOCALE`, `APP_FALLBACK_LOCALE`, `APP_FAKER_LOCALE`).
+- **File:** `config/app.php` baris 81-85, `.env.example` baris 8-10
 
-### 3. Apakah ada konfigurasi CORS yang benar untuk API?
-- **Status**: ⚠️ Sebagian
-- **Temuan Spesifik**: Tidak ditemukan berkas konfigurasi `cors.php` kustom. Proyek mengandalkan middleware internal framework bawaan Laravel.
-- **Rekomendasi**: Karena ini adalah backend API untuk mobile, CORS bawaan sudah mencukupi. Namun, jika di masa depan akan dikembangkan SPA (Single Page Application) berbasis Web, disarankan mempublish konfigurasi CORS via `php artisan config:publish cors` untuk mempermudah whitelist domain web klien.
+### ⚠️ Konfigurasi CORS untuk API
+- **Status:** ⚠️ Sebagian
+- **Temuan:** Tidak ada file `config/cors.php` yang di-publish. Laravel memiliki default CORS configuration, tetapi untuk starter project seharusnya ada konfigurasi eksplisit — terutama jika ada rencana web client selain mobile.
+- 💡 **Rekomendasi:** Publish `config/cors.php` dan dokumentasikan konfigurasi yang direkomendasikan.
 
-### 4. Apakah ada konfigurasi cache, queue, session yang siap pakai?
-- **Status**: ✅ Sangat Lengkap
-- **Temuan Spesifik**: Cache dikonfigurasi secara aktif pada model `AppConfig` (`Cache::remember`). Konfigurasi queue `database` siap pakai di `.env.example`, dan log server dijalankan secara paralel via Pail pada mode dev.
-- **Rekomendasi**: Sangat baik dan modern.
+### ✅ Konfigurasi cache, queue, session siap pakai
+- **Status:** ✅ Ada
+- **Temuan:**
+  - **Cache:** `database` (default), configurable via `.env`
+  - **Queue:** `database` (default), bisa switch ke Redis
+  - **Session:** `database`, lifetime 120 menit
+  - Semua dikonfigurasi dengan baik di `.env.example`
+- **File:** `.env.example` baris 42-54
 
 ---
 
 ## D. Keamanan Dasar
 
-### 1. Apakah `.gitignore` sudah mencakup semua file sensitif?
-- **Status**: ✅ Sangat Lengkap
-- **Temuan Spesifik**: Berkas [.gitignore](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/.gitignore) menyembunyikan file `.env`, berkas kunci Passport (`oauth-*.key`), folder vendor, cache pengujian, dan direktori unduhan `storage/app/regions/*`.
-- **Rekomendasi**: Tambahkan `*.json` spesifik (seperti `firebase-service-account.json`) ke `.gitignore` agar file kredensial Firebase tidak sengaja ter-commit.
+### ✅ `.gitignore` mencakup semua file sensitif
+- **Status:** ✅ Ada
+- **Temuan:** `.gitignore` (34 baris) mencakup:
+  - `.env`, `.env.backup`, `.env.production`
+  - `storage/*.key` (Passport keys)
+  - `vendor/`, `node_modules/`
+  - IDE files (`.idea`, `.vscode`, `.cursor`, `.zed`)
+  - Build artifacts (`public/build`, `public/hot`)
+- **File:** `.gitignore`
 
-### 2. Apakah tidak ada credential hardcoded di codebase?
-- **Status**: ✅ Aman
-- **Temuan Spesifik**: Kunci enkripsi, credentials database, Firebase, dan driver push notification ditarik sepenuhnya melalui `env()` atau `config()`.
-- **Rekomendasi**: Lakukan pemindaian berkala menggunakan tools seperti `gitleaks` sebelum merilis starter ini ke publik.
+### ✅ Tidak ada credential hardcoded di codebase
+- **Status:** ✅ Ada
+- **Temuan:** Semua credential menggunakan `env()` helper. Passport client ID/secret, Firebase credentials, SMS provider — semuanya dari environment variable. Tidak ditemukan hardcoded password atau API key di source code.
 
-### 3. Apakah ada rate limiting di route API?
-- **Status**: ✅ Sangat Baik & Ketat
-- **Temuan Spesifik**: Rate limiting terpasang ketat pada [routes/api.php](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/routes/api.php):
-  - Endpoint info aplikasi: `throttle:60,1` (baris 16-17).
-  - OTP Send & Verify: `throttle:10,1` (baris 21).
-  - Auth Login & Refresh: `throttle:6,1` (baris 27-28).
-- **Rekomendasi**: Pola mitigasi brute-force ini sudah sangat aman untuk standar produksi mobile backend.
+### ✅ Rate limiting di route API
+- **Status:** ✅ Ada
+- **Temuan:** Rate limiting diterapkan pada endpoint kritis:
+  - Login: `throttle:6,1` (6 request per menit)
+  - Refresh: `throttle:6,1`
+  - App version/config: `throttle:60,1`
+  - OTP send/verify: `throttle:10,1`
+- **File:** `routes/api.php` baris 16-28
 
-### 4. Apakah HTTPS enforced di production config?
-- **Status**: ❌ Tidak Ada
-- **Temuan Spesifik**: Tidak ditemukan middleware atau konfigurasi AppServiceProvider untuk `URL::forceScheme('https')` saat `app.env === 'production'`.
-- **Rekomendasi**: Tambahkan logika `URL::forceScheme('https')` di dalam `AppServiceProvider::boot()` dengan pengecekan `app()->environment('production')` untuk menjamin keamanan transit data token API di produksi.
+### ✅ HTTPS enforced di production config
+- **Status:** ✅ Ada
+- **Temuan:** `AppServiceProvider::boot()` baris 43-45 memaksa HTTPS di production:
+  ```php
+  if (app()->environment('production')) {
+      URL::forceScheme('https');
+  }
+  ```
+- **File:** `app/Providers/AppServiceProvider.php` baris 43-45
 
 ---
 
-## Ringkasan Evaluasi & Skor
+## Ringkasan
 
-| Area Evaluasi | Status | Catatan Utama |
-|---|---|---|
-| **A. Setup & Instalasi** | ⚠️ Cukup Baik | Setup composer otomatis luar biasa, namun kehilangan Docker/Sail. |
-| **B. Database & Migrations** | ✅ Sangat Baik | Migrasi rapi, tipe ULID/jsonb tepat, seeder sangat lengkap. |
-| **C. Konfigurasi Awal** | ✅ Sangat Baik | Default timezone UTC & env-driven locale sangat ideal untuk API. |
-| **D. Keamanan Dasar** | ✅ Sangat Baik | Rate limiting ketat & .gitignore aman, butuh HTTPS enforcement. |
+| Sub-area | Skor | Catatan |
+|----------|------|---------|
+| Setup & Instalasi | 9/10 | Sangat lengkap, hanya kurang Makefile |
+| Database & Migrations | 9/10 | Semua factory ada, seeder berguna |
+| Konfigurasi Awal | 8/10 | CORS perlu di-publish |
+| Keamanan Dasar | 9/10 | Rate limiting dan HTTPS configured |
 
-### **Skor Akhir: 9.0 / 10**
+---
 
-> **Justifikasi**: Proyek ini memiliki fondasi yang sangat kokoh untuk langsung dideploy sebagai Starter Project. Struktur database, tipe data modern (ULID/jsonb), script setup terintegrasi, dan konfigurasi keamanan rate-limiting yang sangat matang membuatnya hampir sempurna. Pengurangan skor hanya disebabkan oleh ketiadaan out-of-the-box Docker/Sail support dan HTTPS enforcement bawaan pada config production.
+## Skor Akhir: 8/10
+
+**Justifikasi:** Project ini sangat siap digunakan sebagai starter. Instruksi instalasi jelas, konfigurasi lengkap, seeder dan factory tersedia untuk semua model. Keamanan dasar (rate limiting, HTTPS, gitignore) sudah diterapkan. Poin yang mengurangi skor: tidak ada `Makefile`, `config/cors.php` belum di-publish secara eksplisit, dan beberapa konfigurasi production (monitoring, health check lanjutan) belum ada — yang wajar untuk tahap ini.

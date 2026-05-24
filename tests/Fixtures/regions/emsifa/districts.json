@@ -1,0 +1,27 @@
+[
+  {
+    "id": "1101010",
+    "regency_id": "1101",
+    "name": "TEUPAH SELATAN"
+  },
+  {
+    "id": "1101020",
+    "regency_id": "1101",
+    "name": "SIMEULUE TIMUR"
+  },
+  {
+    "id": "1102010",
+    "regency_id": "1102",
+    "name": "PULAU BANYAK"
+  },
+  {
+    "id": "1201010",
+    "regency_id": "1201",
+    "name": "PINANGSORI"
+  },
+  {
+    "id": "1271010",
+    "regency_id": "1271",
+    "name": "MEDAN TUNTUNGAN"
+  }
+]

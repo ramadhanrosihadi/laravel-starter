@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AppController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\EmailVerificationController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\OtpController;
@@ -27,7 +28,15 @@ Route::prefix('v1')->group(function (): void {
         Route::post('login', [AuthController::class, 'login'])->middleware(['throttle:6,1', 'check.maintenance']);
         Route::post('refresh', [AuthController::class, 'refresh'])->middleware(['throttle:6,1', 'check.maintenance']);
 
+        Route::get('email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+            ->name('verification.verify')
+            ->middleware(['check.maintenance']);
+
         Route::middleware(['auth:api', 'check.maintenance'])->group(function (): void {
+            Route::post('email/send-verification', [EmailVerificationController::class, 'sendVerification'])
+                ->middleware('throttle:6,1');
+            Route::post('email/verify', [EmailVerificationController::class, 'verify']);
+
             Route::get('me', [AuthController::class, 'me']);
             Route::put('me', [AuthController::class, 'updateProfile']);
             Route::post('avatar', [AuthController::class, 'uploadAvatar']);

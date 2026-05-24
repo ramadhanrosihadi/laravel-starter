@@ -1,88 +1,247 @@
-# Kelengkapan Dokumentasi
+# 04 — Kelengkapan Dokumentasi
 
-Dokumen ini menyajikan hasil audit kelengkapan dan kualitas dokumentasi (baik yang tertulis maupun yang berada di dalam kode) pada proyek **Laravel Starter**.
+> Audit semua dokumentasi yang ada dan yang seharusnya ada.
+> Direview: 2026-05-24 | Reviewer: Antigravity AI Agent
 
 ---
 
 ## A. Dokumentasi yang Diperiksa
 
-Berikut adalah daftar pemeriksaan keberadaan dan kualitas dokumen-dokumen utama proyek:
+| Dokumen | Ada? | Kualitas (1-5) | Catatan |
+|---------|------|----------------|---------|
+| `README.md` | ✅ Ya | 5/5 | 162 baris. Dua opsi instalasi (lokal + Docker), warning Passport setup, endpoint reference, testing instruction. Sangat lengkap. |
+| `CONTRIBUTING.md` | ✅ Ya | 5/5 | 126 baris. Branch workflow, Conventional Commits, quality gate checklist, push rules, PR guidelines. Profesional. |
+| `CHANGELOG.md` | ❌ Tidak | — | Tidak ada file changelog. Progress dilacak di `WORK_SESSIONS.md` dan `TASK.md` tapi ini bukan changelog publik. |
+| `SECURITY.md` | ❌ Tidak | — | Tidak ada file kebijakan pelaporan kerentanan keamanan. |
+| `LICENSE` | ❌ Tidak | — | Tidak ada file LICENSE meskipun `composer.json` menyatakan `"license": "MIT"`. |
+| `docs/ARCHITECTURE.md` | ✅ Ya | 5/5 | 283 baris. Diagram arsitektur, layer responsibilities, auth strategy decision log, response standard, Flutter best practices, anti-patterns. Luar biasa. |
+| `CLAUDE.md` (AI context) | ✅ Ya | 4/5 | 80 baris. Tech stack, commands, coding conventions, security notes. Bisa ditingkatkan dengan testing convention dan error handling section. |
+| `CONVENTIONS.md` | ❌ Tidak | — | Konvensi tertulis di `CLAUDE.md` §4 dan `ARCHITECTURE.md`, tapi tidak ada file terpisah. |
+| `docs/api/` (dokumentasi API) | ✅ Ya (otomatis) | 4/5 | Scramble menyediakan `/docs/api` (interactive) dan `/docs/api.json` (OpenAPI). Tidak ada dokumentasi API manual/naratif. |
+| `docs/erd/` atau ERD diagram | ❌ Tidak | — | Tidak ada ERD. Relasi hanya bisa dipahami dari model docblock dan migration. |
+| `docs/deployment.md` | ❌ Tidak | — | Tidak ada panduan deployment production. |
+| `docs/environment.md` | ❌ Tidak | — | Konfigurasi environment terdokumentasi di `.env.example`, tapi tidak ada dokumen terpisah yang menjelaskan setiap variable secara detail. |
+| `.env.example` (terdokumentasi) | ✅ Ya | 4/5 | 95 baris dengan komentar per section. Beberapa variable seperti `BCRYPT_ROUNDS` dan `SEED_REGIONS` sudah berkomentar. Bisa ditingkatkan dengan komentar untuk setiap section Redis dan AWS. |
 
-| Dokumen | Ada? | Kualitas (1-5) | Catatan / Temuan |
-|---------|------|----------------|------------------|
-| `README.md` | ✅ Ada | 4 / 5 | Berisi panduan instalasi lokal, dependensi, dan cara inisialisasi user admin dengan sangat jelas. |
-| `CONTRIBUTING.md` | ✅ Ada | 4 / 5 | Menjabarkan konvensi branching, commit (Conventional Commits), dan *quality gates* sebelum melakukan push. |
-| `CHANGELOG.md` | ❌ Tidak Ada | — | Tidak ditemukan berkas riwayat rilis perubahan. |
-| `SECURITY.md` | ❌ Tidak Ada | — | Tidak ditemukan berkas panduan pelaporan celah keamanan. |
-| `LICENSE` | ❌ Tidak Ada | — | Lisensi disebut MIT di `composer.json`, namun berkas fisik `LICENSE` tidak ada. |
-| `docs/ARCHITECTURE.md` | ✅ Ada | 5 / 5 | Luar biasa detail. Menyediakan diagram arsitektur, penjelasan layering, strategi auth, standard API, dan best practice integrasi Flutter. |
-| `CLAUDE.md` / `AGENTS.md` | ❌ Tidak Ada | — | Berkas context instan untuk AI Agent belum tersedia. |
-| `CONVENTIONS.md` | ❌ Tidak Ada | — | Konvensi koding tersebar di dalam berkas ARCHITECTURE dan DATA_MASTER_PATTERN, belum disatukan dalam berkas terpisah. |
-| `docs/api/` (API Docs) | ✅ Ada (Dinamis) | 4 / 5 | Menggunakan **Scramble** yang men-generate dokumentasi OpenAPI secara otomatis di `/docs/api` dan `/docs/api.json`. Sangat praktis. |
-| `docs/erd/` atau ERD diagram | ❌ Tidak Ada | — | Tidak ditemukan diagram hubungan entitas database. |
-| `docs/deployment.md` | ❌ Tidak Ada | — | Panduan deployment ke staging/production server belum tersedia. |
-| `docs/environment.md` | ❌ Tidak Ada | — | Penjelasan detail mengenai konfigurasi server/env belum terpisah dari README. |
-| `.env.example` | ✅ Ada | 5 / 5 | Sangat detail. Menyertakan seluruh key yang dibutuhkan untuk operasional penuh backend (Passport, Firebase, Seeder, dll.). |
+### Dokumen Tambahan yang Ditemukan
+
+| Dokumen | Kualitas | Catatan |
+|---------|----------|---------|
+| `docs/MODULES.md` | 4/5 | 6.1 KB. Daftar modul & fitur starter beserta prioritas. |
+| `docs/WORK_SESSIONS.md` | 4/5 | 33 KB. Rencana pembagian sesi kerja (~5 jam/sesi) untuk implementasi bertahap. Sangat detail. |
+| `docs/DATA_MASTER_PATTERN.md` | 5/5 | 2.4 KB. Blueprint replikasi CRUD data master berdasarkan `Category`. Sangat berguna untuk AI Agent. |
+| `docs/TASK.md` | 4/5 | 16 KB. Task list operasional dengan status per-item. |
 
 ---
 
 ## B. Template Dokumen untuk Project Baru
 
-Apakah tersedia template administratif di dalam folder `.github/` atau tempat lain?
-- [ ] **Template issue/bug report**: ❌ Tidak Ada
-- [ ] **Template feature request**: ❌ Tidak Ada
-- [ ] **Template pull request**: ❌ Tidak Ada
-- [ ] **Template dokumen spesifikasi fitur**: ❌ Tidak Ada
-- [ ] **Template API endpoint documentation**: ❌ Tidak Ada (ditangani otomatis oleh Scramble)
+### ❌ Template issue/bug report
+- **Status:** ❌ Tidak Ada
+- **Temuan:** Tidak ada `.github/ISSUE_TEMPLATE/` directory.
+- 💡 **Rekomendasi:** Buat `bug_report.md` dan `feature_request.md` template di `.github/ISSUE_TEMPLATE/`.
+
+### ❌ Template feature request
+- **Status:** ❌ Tidak Ada
+- **Temuan:** Lihat di atas.
+
+### ❌ Template pull request
+- **Status:** ❌ Tidak Ada
+- **Temuan:** Tidak ada `.github/pull_request_template.md`.
+- 💡 **Rekomendasi:** Buat PR template dengan checklist (quality gate, test, docs update).
+
+### ⚠️ Template dokumen spesifikasi fitur
+- **Status:** ⚠️ Sebagian
+- **Temuan:** `docs/DATA_MASTER_PATTERN.md` berfungsi sebagai template untuk CRUD baru, tapi tidak ada template generik untuk spesifikasi fitur non-CRUD.
+
+### ✅ Template API endpoint documentation
+- **Status:** ✅ Ada (otomatis via Scramble)
+- **Temuan:** Scramble otomatis generate OpenAPI docs dari controller annotations. Tidak perlu template manual.
 
 ---
 
 ## C. Komentar dalam Kode
 
-- **Kualitas Komentar**: **Sangat Tepat Sasaran**
-  Komentar di dalam kode tidak berlebihan (tidak sekadar menulis ulang apa yang dilakukan kode), melainkan menjelaskan **alasan (the "why")** di balik suatu keputusan teknis. Contohnya di [AppServiceProvider.php](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/app/Providers/AppServiceProvider.php#L46-L51), terdapat komentar penjelas yang menerangkan mengapa model `Role` Spatie harus didaftarkan secara eksplisit ke Policy, sedangkan model `User` dapat terdeteksi otomatis.
-- **Kualitas Docblock**: **Luar Biasa**
-  Semua model Eloquent utama memiliki docblock lengkap di bagian atas yang mendeklarasikan seluruh properti fields berserta type datanya. Ini merupakan praktek terbaik yang jarang ditemukan di proyek starter lain dan sangat membantu IDE serta AI Agent dalam menganalisis kode secara statis.
+### Penilaian Kualitas Komentar
+
+| Aspek | Rating | Detail |
+|-------|--------|--------|
+| Kuantitas | ✅ Tepat | Tidak berlebihan, tidak kurang. Komentar hanya di tempat yang memerlukan konteks. |
+| Kualitas | ✅ Baik | Komentar menjelaskan "mengapa", bukan "apa". |
+| Docblock | ✅ Konsisten | `@property` di semua Model, `@param`/`@return` di Service methods. |
+| Route comments | ⚠️ Sebagian | Beberapa group punya komentar, beberapa tidak. |
+
+**Contoh komentar bagus:**
+
+```php
+// AppServiceProvider.php baris 55-56
+// super-admin bypasses every authorization check (API + back-office).
+Gate::before(fn (?User $user, string $ability): ?bool => ...);
+```
+
+```php
+// AuthService.php baris 35-36
+// Reload user after token issuance to ensure it exists
+```
+
+```php
+// DatabaseSeeder.php baris 24
+// Region data (~245k records) is opt-in to avoid slow default seeds.
+```
+
+```php
+// RolePermissionSeeder.php baris 13-16
+// Roles & permissions live on the `web` guard. Both the `web` (session)
+// and `api` (Passport) guards share the `users` provider, so permission
+// checks resolve correctly in both back-office and API contexts.
+```
+
+**Contoh yang bisa ditingkatkan:**
+
+```php
+// AuthService.php baris 93 — sudah baik
+// Nullify push token so device stops receiving notifications
+```
+
+Secara keseluruhan, komentar dalam kode sudah berkualitas tinggi — menjelaskan keputusan desain dan konteks bisnis, bukan hanya merepetisi kode.
 
 ---
 
-## D. Rekomendasi Dokumen yang Harus Dibuat (Urutan Prioritas)
+## D. Rekomendasi Dokumen yang Harus Dibuat
 
-### 1. `CLAUDE.md` (Prioritas Utama - Sangat Penting untuk Kolaborasi AI)
-- **Tujuan**: Memberikan petunjuk instan kepada AI Agent (seperti Claude Code, Gemini, Cursor) tentang cara mengoperasikan proyek ini.
-- **Outline**:
-  ```markdown
-  # Claude Context Guide
-  - **Commands**: Run tests (`php artisan test`), Run linter (`vendor/bin/pint`), Run analysis (`phpstan analyse --memory-limit=1G`)
-  - **Technology**: Laravel 13, Filament v5, Passport v13, PostgreSQL.
-  - **Conventions**: No repositories, Logic inside Services, modular Filament schemas, strictly use ApiResponse helper for API.
-  ```
+Urut dari paling penting:
 
-### 2. `docs/deployment.md` (Prioritas Penting)
-- **Tujuan**: Memandu sysadmin atau developer untuk merilis backend ini ke server produksi.
-- **Outline**:
-  ```markdown
-  # Deployment Guide
-  - **Requirements**: PHP 8.3+, PostgreSQL 16+, Redis (optional).
-  - **Build Steps**: `composer install --no-dev`, `npm install && npm run build`, `php artisan migrate --force`.
-  - **Passport Keys**: How to generate and securely store `storage/oauth-*.key` in production env (e.g. using environment variables `PASSPORT_PRIVATE_KEY` / `PASSPORT_PUBLIC_KEY`).
-  - **Firebase Setup**: Mounting service accounts.
-  ```
+### 1. 🔥 `LICENSE` (file root)
+**Prioritas:** Kritis
+**Outline:**
+- MIT License (sudah dideklarasi di `composer.json`)
+- Tahun dan nama pemilik copyright
 
-### 3. `LICENSE` & `SECURITY.md` (Prioritas Menengah)
-- **Tujuan**: Kepastian hukum lisensi kode (MIT) dan petunjuk pelaporan kerentanan keamanan secara etis.
+### 2. 🔥 `docs/erd/database_erd.md`
+**Prioritas:** Tinggi
+**Outline:**
+```
+# Entity Relationship Diagram
+## Diagram (Mermaid)
+- users → user_devices (1:N)
+- users → notifications (1:N)
+- users → otp_codes (via phone)
+- users → roles (M:N via model_has_roles)
+- roles → permissions (M:N via role_has_permissions)
+- categories (standalone, soft-delete)
+- app_configs (standalone, key-value)
+- app_versions (standalone)
+- regions (self-referential: parent_id)
+## Keterangan Kolom per Tabel
+```
+
+### 3. ⚠️ `SECURITY.md` (file root)
+**Prioritas:** Tinggi
+**Outline:**
+```
+# Security Policy
+## Supported Versions
+## Reporting a Vulnerability
+## Response Timeline
+## Known Security Considerations
+  - Passport keys management
+  - Rate limiting configuration
+  - HTTPS enforcement
+```
+
+### 4. ⚠️ `docs/deployment.md`
+**Prioritas:** Sedang
+**Outline:**
+```
+# Panduan Deployment
+## Prasyarat Production
+## Environment Variables untuk Production
+## Database Migration di Production
+## Passport Keys di Production
+## Queue Worker Setup
+## Web Server (Nginx/Apache) Configuration
+## SSL/HTTPS Setup
+## Monitoring & Logging
+```
+
+### 5. ⚠️ `.github/ISSUE_TEMPLATE/bug_report.md`
+**Prioritas:** Sedang
+**Outline:**
+```
+# Bug Report
+## Describe the bug
+## Steps to reproduce
+## Expected behavior
+## Screenshots
+## Environment (PHP, Laravel, Browser)
+```
+
+### 6. ⚠️ `.github/ISSUE_TEMPLATE/feature_request.md`
+**Prioritas:** Sedang
+**Outline:**
+```
+# Feature Request
+## Problem description
+## Proposed solution
+## Alternative solutions
+## Additional context
+```
+
+### 7. ⚠️ `.github/pull_request_template.md`
+**Prioritas:** Sedang
+**Outline:**
+```
+# Pull Request
+## What does this PR do?
+## Related issue
+## Checklist:
+  - [ ] Quality gate passed (Pint, PHPStan, Tests)
+  - [ ] Documentation updated
+  - [ ] .env.example updated (if needed)
+  - [ ] Migration included (if needed)
+```
+
+### 8. 💡 `CHANGELOG.md` (file root)
+**Prioritas:** Rendah
+**Outline:**
+```
+# Changelog
+## [Unreleased]
+## [0.5.0] - 2026-05-24 (Sesi 5)
+- feat: Dashboard widget, branding, polish
+## [0.4.0] - 2026-05-24 (Sesi 4)
+- feat: Category CRUD (API + Filament)
+## [0.3.0] - 2026-05-23 (Sesi 3)
+- feat: User & Role management
+(dll.)
+```
+
+### 9. 💡 `.github/workflows/ci.yml`
+**Prioritas:** Sedang
+**Outline:**
+```
+# CI Pipeline
+- Trigger: push & PR to main
+- Jobs:
+  - lint (pint --test)
+  - analyse (phpstan)
+  - test (phpunit with PostgreSQL service)
+```
 
 ---
 
-## Ringkasan Evaluasi & Skor
+## Ringkasan
 
-| Aspek Dokumentasi | Keterangan | Skor |
-|---|---|---|
-| **Dokumen Arsitektur & Pola** | Sangat detail, arsitektur & data master terdokumentasi luar biasa. | 10 / 10 |
-| **Komentar & Docblock** | Docblock model sangat komprehensif, komentar informatif. | 10 / 10 |
-| **Dokumen Administratif & Templates**| Tidak ada LICENSE, CHANGELOG, SECURITY, dan PR templates. |  4 / 10 |
-| **AI Context File** | Belum memiliki `CLAUDE.md`. |  0 / 10 |
+| Sub-area | Skor | Catatan |
+|----------|------|---------|
+| Dokumentasi inti | 5/5 | README, ARCHITECTURE, CONTRIBUTING sangat kuat |
+| File legalitas & kebijakan | 2/5 | Tidak ada LICENSE, SECURITY, CHANGELOG |
+| Template project | 2/5 | Tidak ada GitHub templates (issue, PR) |
+| Komentar kode | 4/5 | Berkualitas tinggi, tepat sasaran |
+| Dokumen penunjang | 3/5 | Tidak ada ERD, deployment guide, environment guide |
 
-### **Skor Akhir: 8.0 / 10**
+---
 
-> **Justifikasi**: Dari sisi dokumentasi teknis koding (Arsitektur, pola data master, dan docblock dalam kode), proyek ini berhak mendapatkan nilai sempurna (10/10) karena kualitas tulisannya yang sangat luar biasa dan mendalam. Pengurangan skor hingga angka **8.0** semata-mata disebabkan oleh ketiadaan dokumen administratif pendukung (seperti LICENSE, SECURITY, CHANGELOG), ketiadaan file context AI (`CLAUDE.md`), serta ketiadaan template Pull Request/Issue GitHub.
+## Skor Akhir: 7/10
+
+**Justifikasi:** Dokumentasi inti project (README, ARCHITECTURE, CONTRIBUTING, CLAUDE.md, DATA_MASTER_PATTERN) adalah salah satu kekuatan terbesar — sangat jarang starter project memiliki kualitas dokumentasi sebaik ini. Namun ada beberapa dokumen standar yang masih kurang: `LICENSE`, `SECURITY.md`, ERD diagram, deployment guide, dan GitHub templates. Menambahkan ini akan meningkatkan skor secara signifikan.

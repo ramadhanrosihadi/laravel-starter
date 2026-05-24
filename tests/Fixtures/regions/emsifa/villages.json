@@ -1,0 +1,32 @@
+[
+  {
+    "id": "1101010001",
+    "district_id": "1101010",
+    "name": "LATIUNG"
+  },
+  {
+    "id": "1101010002",
+    "district_id": "1101010",
+    "name": "LABUHAN BAJAU"
+  },
+  {
+    "id": "1101020001",
+    "district_id": "1101020",
+    "name": "SIMEULUE CUT"
+  },
+  {
+    "id": "1102010001",
+    "district_id": "1102010",
+    "name": "PULAU BANYAK"
+  },
+  {
+    "id": "1201010001",
+    "district_id": "1201010",
+    "name": "PINANGSORI"
+  },
+  {
+    "id": "1271010001",
+    "district_id": "1271010",
+    "name": "LAUCIH"
+  }
+]

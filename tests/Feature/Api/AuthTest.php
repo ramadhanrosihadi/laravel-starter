@@ -44,8 +44,21 @@ class AuthTest extends TestCase
             ->assertOk()
             ->assertJson(['success' => true, 'message' => 'Login successful'])
             ->assertJsonStructure([
-                'data' => ['access_token', 'refresh_token', 'token_type', 'expires_in'],
-            ]);
+                'data' => ['access_token', 'refresh_token', 'token_type', 'expires_in', 'email_verified'],
+            ])
+            ->assertJsonPath('data.email_verified', true);
+    }
+
+    public function test_login_returns_email_verified_false_when_unverified(): void
+    {
+        $unverifiedUser = User::factory()->unverified()->create(['email' => 'unverified@example.com']);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'unverified@example.com',
+            'password' => 'password',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.email_verified', false);
     }
 
     public function test_login_fails_with_wrong_password(): void
@@ -137,5 +150,41 @@ class AuthTest extends TestCase
             'email' => 'tester@example.com',
             'password' => 'password',
         ])->assertOk()->json('data');
+    }
+
+    public function test_login_throws_runtime_exception_when_passport_misconfigured_in_debug_mode(): void
+    {
+        $this->withoutExceptionHandling();
+
+        config([
+            'app.debug' => true,
+            'passport.password_client.secret' => 'incorrect-secret-to-trigger-invalid-client',
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Passport configuration error');
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'tester@example.com',
+            'password' => 'password',
+        ]);
+    }
+
+    public function test_login_throws_authentication_exception_when_passport_misconfigured_in_production_mode(): void
+    {
+        config([
+            'app.debug' => false,
+            'passport.password_client.secret' => 'incorrect-secret-to-trigger-invalid-client',
+        ]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'tester@example.com',
+            'password' => 'password',
+        ])->assertUnauthorized()
+            ->assertJson([
+                'success' => false,
+                'message' => 'Unauthenticated.',
+                'code' => 'UNAUTHENTICATED',
+            ]);
     }
 }

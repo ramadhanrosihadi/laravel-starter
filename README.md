@@ -51,6 +51,8 @@ Tujuannya adalah menyediakan kerangka kerja yang bersih, konsisten, dan siap dik
 
 ## Cara Menjalankan
 
+### Opsi A: Menjalankan Secara Lokal (Local Environment)
+
 > Prasyarat: **PHP 8.3+**, **Composer 2**, **PostgreSQL 14+**, dan **Node 20+**.
 > Di Windows lokal proyek ini pernah memakai `C:\php8.3.6\php.exe` karena PATH default masih PHP 7.4.
 
@@ -75,28 +77,76 @@ npm run build
 php artisan serve
 ```
 
+### Opsi B: Menjalankan Menggunakan Docker (Laravel Sail)
+
+Bagi Anda yang ingin menginisialisasi lingkungan pengembangan instan tanpa perlu memasang PHP, PostgreSQL, Node, atau Redis secara lokal di mesin Anda, Anda dapat menggunakan kontainerisasi **Laravel Sail** yang sudah terintegrasi.
+
+> Prasyarat: **Docker Desktop** telah terpasang dan berjalan di sistem Anda.
+
+```bash
+# 1. Setup environment
+cp .env.example .env
+
+# 2. Nyalakan kontainer Docker (PostgreSQL, Redis, Mailpit, PHP 8.3) di background
+# (Jika baru pertama kali, proses build image akan memakan waktu beberapa menit)
+./vendor/bin/sail up -d
+
+# 3. Generate key & jalankan migrasi database serta seeder
+./vendor/bin/sail artisan key:generate
+./vendor/bin/sail artisan migrate --seed
+
+# 4. Build assets & jalankan frontend compiler
+./vendor/bin/sail npm install
+./vendor/bin/sail npm run build
+```
+
+Setelah kontainer berjalan, aplikasi dapat diakses di `http://localhost`. Anda juga dapat memantau kotak masuk email pengujian (Mailpit) di `http://localhost:8025`.
+Untuk menghentikan kontainer, jalankan `./vendor/bin/sail down`.
+
+
 Cek koneksi: buka `GET /api/v1/health` → harus mengembalikan envelope JSON `{ "success": true, ... }`.
 
 **Akun admin default (seeder):** `admin@example.com` / `password` (role `super-admin`). Login back-office di `/admin`.
 
-**Setup Passport (sekali, atau di clone/CI baru):**
+> [!WARNING]
+> **PENTING: Konfigurasi Passport Client ID & Client Secret**
+> Endpoint login API (`POST /api/v1/auth/login`) bergantung sepenuhnya pada Laravel Passport Password Client. Pada instalasi baru atau clone baru, Anda **WAJIB** menjalankan perintah berikut:
+> ```bash
+> php artisan passport:keys
+> php artisan passport:client --password
+> ```
+> Setelah menjalankan perintah kedua, Anda akan mendapatkan **Client ID** dan **Client Secret**. Salin kedua nilai tersebut dan masukkan ke dalam variabel lingkungan berikut di file `.env`:
+> ```env
+> PASSPORT_PASSWORD_CLIENT_ID=<Client-ID-Anda>
+> PASSPORT_PASSWORD_CLIENT_SECRET=<Client-Secret-Anda>
+> ```
+> Jika langkah ini terlewatkan, API Login akan mengembalikan error kegagalan autentikasi atau server error.
 
-```bash
-php artisan passport:keys                       # generate storage/oauth-*.key (gitignored)
-php artisan passport:client --password          # isi PASSPORT_PASSWORD_CLIENT_ID/SECRET di .env
-```
 
 **Endpoint Auth API (Flutter):** `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `GET /api/v1/auth/me`. Lihat [docs/ARCHITECTURE.md §5](docs/ARCHITECTURE.md).
 
 **Dokumentasi API:** Scramble menyediakan dokumentasi interaktif di `/docs/api` dan OpenAPI JSON di `/docs/api.json`. Endpoint docs hanya terbuka otomatis di `local`; untuk environment lain gunakan Gate `viewApiDocs`. Tim Flutter/Postman dapat memakai URL OpenAPI JSON tersebut sebagai sumber kontrak API.
 
-**Testing:** test berjalan di database PostgreSQL terpisah `laravel_starter_test` (lihat `phpunit.xml`). Buat database tersebut sekali, lalu:
+**Testing:** Pengujian secara default berjalan di database PostgreSQL terpisah bernama `laravel_starter_test` menggunakan konfigurasi di `.env.testing` agar sepenuhnya selaras dengan lingkungan produksi (PostgreSQL).
 
+Jika Anda menggunakan **Laravel Sail (Docker)**, database pengujian `laravel_starter_test` sudah dibuat dan diinisialisasi secara otomatis saat kontainer dijalankan.
+
+Jika Anda menjalankan secara **lokal tanpa Docker/Sail**, Anda **WAJIB** membuat database pengujian tersebut terlebih dahulu sebelum menjalankan pengujian:
+```bash
+# Untuk PostgreSQL lokal (gunakan terminal/tool pilihan Anda):
+createdb laravel_starter_test
+```
+
+Setelah database siap, Anda dapat menjalankan test suite dan linter dengan perintah berikut:
 ```bash
 php artisan test
 vendor/bin/pint
 vendor/bin/phpstan analyse --memory-limit=1G
 ```
+
+> [!TIP]
+> **Fallback ke SQLite In-Memory:**
+> Jika Anda belum memasang PostgreSQL atau ingin menjalankan tes secara super cepat menggunakan driver SQLite `:memory:`, Anda cukup menghapus komentar (uncomment) bagian SQLite di berkas `phpunit.xml` atau mengatur `DB_CONNECTION=sqlite` dan `DB_DATABASE=:memory:` di berkas `.env.testing`.
 
 Jika PATH masih mengarah ke PHP lama di Windows, jalankan quality gate dengan binary PHP 8.3:
 

@@ -1,6 +1,7 @@
-# Kelengkapan Fitur Generic
+# 05 — Kelengkapan Fitur Generic
 
-Dokumen ini menyajikan hasil audit kelengkapan fitur-fitur generik yang umumnya dibutuhkan oleh sebuah aplikasi SaaS/Multi-tenant modern dan Mobile Backend pada proyek **Laravel Starter**.
+> Audit fitur-fitur yang sudah tersedia, siap pakai, atau perlu dibangun dari nol.
+> Direview: 2026-05-24 | Reviewer: Antigravity AI Agent
 
 ---
 
@@ -8,17 +9,16 @@ Dokumen ini menyajikan hasil audit kelengkapan fitur-fitur generik yang umumnya 
 
 | Fitur | Status | Catatan |
 |-------|--------|---------|
-| **Register** | ❌ Belum Ada | Pendaftaran user mandiri belum diimplementasikan di tingkat API/Web routes. User baru ditambahkan via Seeder atau Admin Panel. |
-| **Login (Email & Password)** | ✅ Lengkap | Didukung Passport Password Grant (Proxy) terproteksi throttle ketat. |
-| **Email Verification** | ❌ Belum Ada | Belum terintegrasi di tingkat API. |
-| **Password Reset** | ❌ Belum Ada | Reset password mandiri berbasis email/SMS belum dibuat. |
-| **Ubah Password** | ✅ Lengkap | Metode `changePassword` aktif terproteksi `auth:api` di `AuthController`. |
-| **Ubah Profile** | ✅ Lengkap | Metode `updateProfile` aktif memperbarui data diri user di `AuthController`. |
-| **Upload Avatar** | ✅ Lengkap | Didukung `FileUploadService` menyimpan berkas ke disk lokal/S3 di `AuthController`. |
-| **Two-Factor Authentication (2FA)** | ❌ Belum Ada | Belum terintegrasi di Filament maupun API. |
-| **Social Login (Google, dll)** | ❌ Belum Ada | Belum dipasang. |
-| **Remember Me / Session Management** | ✅ Lengkap | Ditangani otomatis oleh guard `web` session untuk Filament back-office. |
-| **Logout dari semua device** | ❌ Belum Ada | Logout saat ini hanya me-revoke token aktif dan token refresh yang berelasi dengannya, bukan seluruh session token di database. |
+| Register & Login | ⚠️ Sebagian | Login via email+password ✅ (Passport). Register ❌ — tidak ada endpoint register mandiri (user dibuat via admin panel atau seeder). |
+| Email Verification | ❌ Belum Ada | `MustVerifyEmail` di-comment di `User.php` baris 5. Tidak ada endpoint send verification email. |
+| Password Reset | ❌ Belum Ada | Tidak ada endpoint "forgot password" / "reset password" via API. Hanya ada `changePassword` yang memerlukan login. |
+| Ubah Password | ✅ Lengkap | `POST /api/v1/auth/change-password` — validasi current_password, field errors. `ChangePasswordRequest.php` |
+| Ubah Profile | ✅ Lengkap | `PUT /api/v1/auth/me` — update name, email. `UpdateProfileRequest.php` |
+| Upload Avatar | ✅ Lengkap | `POST /api/v1/auth/avatar` — upload file, hapus yang lama, simpan path. `AvatarRequest.php`, `FileUploadService.php` |
+| Two-Factor Authentication (2FA) | ❌ Belum Ada | Tidak ada implementasi 2FA (TOTP, SMS, atau email). |
+| Social Login (Google, dll) | ❌ Belum Ada | Tidak ada package `laravel/socialite` atau endpoint OAuth social. |
+| Remember Me / Session Management | ⚠️ Sebagian | Session management ada untuk Filament (back-office). Untuk API, token-based — tidak relevan secara konsep. |
+| Logout dari semua device | ❌ Belum Ada | Logout hanya me-revoke token yang sedang digunakan + nullify push token per device. Tidak ada "revoke all tokens". |
 
 ---
 
@@ -26,12 +26,14 @@ Dokumen ini menyajikan hasil audit kelengkapan fitur-fitur generik yang umumnya 
 
 | Fitur | Status | Catatan |
 |-------|--------|---------|
-| **Tenant Registration / Onboarding** | 🔲 Tidak Relevan | Dihindari secara sengaja oleh keputusan desain (*by design*). |
-| **Tenant Settings** | 🔲 Tidak Relevan | Dihindari secara sengaja oleh keputusan desain (*by design*). |
-| **Subscription / Plan management** | ❌ Belum Ada | Belum terpasang di database maupun logic. |
-| **Billing integration (Stripe/Midtrans)** | ❌ Belum Ada | Belum terintegrasi. |
-| **Usage limits per plan** | ❌ Belum Ada | Belum tersedia. |
-| **Tenant user invitation** | 🔲 Tidak Relevan | Dihindari secara sengaja oleh keputusan desain (*by design*). |
+| Tenant Registration / Onboarding | ❌ Belum Ada | Tidak ada konsep tenant dalam project saat ini. |
+| Tenant Settings | ❌ Belum Ada | `AppConfig` bersifat global, bukan per-tenant. |
+| Subscription / Plan management | ❌ Belum Ada | Tidak ada model Subscription atau Plan. |
+| Billing integration (Midtrans/Stripe) | ❌ Belum Ada | Tidak ada package billing terpasang. |
+| Usage limits per plan | ❌ Belum Ada | Tidak ada sistem quota atau usage tracking. |
+| Tenant user invitation | ❌ Belum Ada | Tidak ada fitur undang user ke tenant/organisasi. |
+
+> **Catatan:** Seluruh section B bernilai ❌ karena multi-tenancy belum diimplementasikan. Jika use case bukan SaaS/Multi-tenant, section ini bisa dianggap 🔲 Tidak Relevan.
 
 ---
 
@@ -39,11 +41,11 @@ Dokumen ini menyajikan hasil audit kelengkapan fitur-fitur generik yang umumnya 
 
 | Fitur | Status | Catatan |
 |-------|--------|---------|
-| **Role CRUD** | ✅ Lengkap | Filament resource modular `Roles/` memungkinkan admin mengelola Role sepenuhnya. |
-| **Permission CRUD** | ⚠️ Sebagian | Dikelola secara rapi lewat `RolePermissionSeeder` di kode (Best Practice), tidak diekspos sebagai CRUD mentah untuk admin guna menjaga integritas sistem. |
-| **Assign role ke user** | ✅ Lengkap | Form User di Filament menyediakan input check-list interaktif untuk assign roles. |
-| **Permission per route/menu** | ✅ Lengkap | Penegakan permission di tingkat API diatur via model Policies standar, dan Filament membatasi tab navigasi otomatis berdasarkan policy tersebut. |
-| **Super admin bypass** | ✅ Lengkap | Terpasang `Gate::before` bypass pada `AppServiceProvider` untuk role `super-admin`. |
+| Role CRUD | ✅ Lengkap | Filament `RoleResource` — create, edit, delete role di back-office. |
+| Permission CRUD | ⚠️ Sebagian | Permission didefinisikan di seeder (`RolePermissionSeeder`). Tidak ada UI untuk create/delete permission secara dinamis — hanya assign ke role. |
+| Assign role ke user | ✅ Lengkap | Filament `UserResource` — assign role saat create/edit user. |
+| Permission per route/menu | ⚠️ Sebagian | Permission diperiksa via Policy di API. Di Filament, akses panel dikontrol oleh `canAccessPanel()`, tapi per-resource permission enforcement belum lengkap (lihat `03_best_practice.md` §D). |
+| Super admin bypass | ✅ Lengkap | `Gate::before` mengembalikan `true` untuk role `super-admin` — bypass semua authorization check. Terdokumentasi di `AppServiceProvider.php` baris 55-56 dan `ARCHITECTURE.md` §5.3. |
 
 ---
 
@@ -51,14 +53,14 @@ Dokumen ini menyajikan hasil audit kelengkapan fitur-fitur generik yang umumnya 
 
 | Fitur | Status | Catatan |
 |-------|--------|---------|
-| **Login API (Passport Token)** | ✅ Lengkap | Didukung Proxy Password Grant standar OAuth2. |
-| **Refresh Token / Token Expiry** | ✅ Lengkap | Auto-refresh token didukung via `/auth/refresh`. Access token 8 jam, refresh 30 hari. |
-| **Logout API** | ✅ Lengkap | Me-revoke access token, me-nullify push token device terkait. |
-| **Push Notification Setup** | ✅ Lengkap | Terintegrasi Firebase/FCM via `PushNotificationService`. |
-| **File Upload via API** | ✅ Lengkap | Upload avatar menggunakan interface `FileUploadService` dengan file validation yang tepat. |
-| **Pagination Standar** | ✅ Lengkap | Output paginator Laravel dikonversi otomatis ke envelope `meta.pagination` di `ApiResponse`. |
-| **API Rate Limiting** | ✅ Lengkap | Terpasang `throttle` di seluruh rute API sensitif. |
-| **API Response Format Konsisten**| ✅ Lengkap | Terpusat melalui `ApiResponse` envelope dan `ForceJsonResponse` global middleware. |
+| Login API (Passport token) | ✅ Lengkap | `POST /api/v1/auth/login` — Passport Password Grant dengan proxy pattern. Return: `access_token`, `refresh_token`, `expires_in`. |
+| Refresh token / token expiry | ✅ Lengkap | `POST /api/v1/auth/refresh` — Passport refresh grant. Access: 8 jam, Refresh: 30 hari. |
+| Logout API | ✅ Lengkap | `POST /api/v1/auth/logout` — revoke access + refresh token, nullify push token per device. |
+| Push notification setup | ✅ Lengkap | Firebase FCM terintegrasi via `kreait/laravel-firebase`. `FcmDriver` + `LogFcmDriver` (dev fallback). `PushNotificationService` untuk kirim notifikasi. `SendNotificationPage` di Filament. |
+| File upload via API | ✅ Lengkap | `POST /api/v1/auth/avatar` — upload via multipart/form-data. `FileUploadService` menangani storage dan delete. |
+| Pagination standar | ✅ Lengkap | `ApiResponse` otomatis menambahkan `meta.pagination` (`current_page`, `per_page`, `total`, `last_page`) untuk paginated response. |
+| API rate limiting | ✅ Lengkap | Rate limit diterapkan pada endpoint kritis: login (6/min), refresh (6/min), OTP (10/min), app info (60/min). |
+| API response format konsisten | ✅ Lengkap | `ApiResponse::success()` dan `ApiResponse::error()` digunakan di semua controller. Format: `{success, message, data, meta, errors}`. |
 
 ---
 
@@ -66,13 +68,13 @@ Dokumen ini menyajikan hasil audit kelengkapan fitur-fitur generik yang umumnya 
 
 | Fitur | Status | Catatan |
 |-------|--------|---------|
-| **Dashboard dengan statistik** | ✅ Lengkap | Diisi widget statistik ringkasan pengguna [StarterOverview.php](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/app/Filament/Widgets/StarterOverview.php). |
-| **User Management** | ✅ Lengkap | CRUD User ter-enkapsulasi modular (`app/Filament/Resources/Users`). |
-| **Role & Permission Management**| ✅ Lengkap | CRUD Role ter-enkapsulasi modular (`app/Filament/Resources/Roles`). |
-| **Settings / Konfigurasi App** | ✅ Lengkap | CRUD AppConfig modular (`app/Filament/Resources/AppConfigs`) memungkinkan ubah maintenance mode/flags tanpa deploy ulang. |
-| **Activity Log** | ❌ Belum Ada | Belum terintegrasi di Filament. |
-| **Media / File Manager** | ❌ Belum Ada | Belum ada dashboard media library khusus. |
-| **Notification Center** | ✅ Lengkap | Halaman kirim notifikasi manual [SendNotificationPage.php](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/app/Filament/Pages/SendNotificationPage.php) telah tersedia. |
+| Dashboard dengan statistik | ✅ Lengkap | `StarterOverview` widget menampilkan statistik overview di dashboard. |
+| User management | ✅ Lengkap | `UserResource` — list, create, edit, soft-enable/disable. Assign role. Modular: Schemas/, Tables/, Pages/, RelationManagers/. |
+| Role & Permission management | ✅ Lengkap | `RoleResource` — CRUD role, assign permissions. Modular. |
+| Settings / Konfigurasi app | ✅ Lengkap | `AppConfigResource` — key-value store untuk maintenance_mode, app_name, dll. Type-aware (string, boolean, integer, json). |
+| Activity log | ❌ Belum Ada | Tidak ada `spatie/laravel-activitylog` atau tracking perubahan data. |
+| Media/file manager | ❌ Belum Ada | Tidak ada `spatie/laravel-medialibrary`. Upload hanya via `FileUploadService` (sederhana). |
+| Notification center | ✅ Lengkap | Database notifications enabled di `AdminPanelProvider`. `SendNotificationPage` untuk kirim notifikasi ke user. API endpoint untuk list, read, mark-read. |
 
 ---
 
@@ -80,26 +82,58 @@ Dokumen ini menyajikan hasil audit kelengkapan fitur-fitur generik yang umumnya 
 
 | Fitur | Status | Catatan |
 |-------|--------|---------|
-| **Logging (Structured)** | ✅ Lengkap | Standar monolitik log di `storage/logs/laravel.log`. Didukung `laravel/pail` untuk dynamic logs tailing di terminal dev. |
-| **Activity Log (Spatie)** | ❌ Belum Ada | Belum dipasang. |
-| **Media Library (Spatie)** | ❌ Belum Ada | Pengelolaan upload berkas ditangani secara kustom menggunakan `FileUploadService`. |
-| **Notifikasi (Email/Database/FCM)**| ✅ Lengkap | Didukung tabel custom `notifications` (ULID) dan Firebase FCM Driver. |
-| **Export (Excel/PDF)** | ❌ Belum Ada | Belum terintegrasi di tabel Filament. |
-| **Import Data** | ❌ Belum Ada | Belum terintegrasi. |
-| **Soft Delete pada Model Utama** | ✅ Lengkap | Model `Category` menggunakan soft deletes secara penuh. |
-| **Global Search** | ❌ Belum Ada | Pencarian global lintas model di panel Filament belum dikonfigurasi. |
+| Logging (structured) | ✅ Lengkap | `config/logging.php` dengan channel stack, single, daily. Laravel default logging sudah tersedia. |
+| Activity Log (Spatie) | ❌ Belum Ada | Package `spatie/laravel-activitylog` tidak terpasang. Tidak ada audit trail. |
+| Media Library (Spatie) | ❌ Belum Ada | Package `spatie/laravel-medialibrary` tidak terpasang. Upload menggunakan `FileUploadService` sederhana. |
+| Notifikasi (email, database, broadcast) | ⚠️ Sebagian | Push notification (FCM) ✅. Database notification (custom `Notification` model) ✅. Email notification ❌ (belum ada email template/notification class). Broadcast ❌. |
+| Export (Excel/PDF) | ❌ Belum Ada | Tidak ada package export (Maatwebsite/Excel, DomPDF). |
+| Import data | ❌ Belum Ada | Tidak ada fitur import data (CSV, Excel). |
+| Soft Delete pada Model utama | ⚠️ Sebagian | `Category` menggunakan `SoftDeletes` ✅. Model lain (`User`, `UserDevice`, `Notification`, `AppConfig`, `AppVersion`, `OtpCode`) tidak menggunakan SoftDeletes. |
+| Global Search | ❌ Belum Ada | Tidak ada fitur pencarian global (Scout, Algolia, Meilisearch). Filament memiliki search bawaan per-resource. |
 
 ---
 
-## Ringkasan Evaluasi & Skor
+## Fitur Tambahan yang Ditemukan (Tidak Diminta)
 
-- **A. Autentikasi & User**: ⚠️ Sebagian (Kehilangan Register, Email Verify, Password Reset mandiri).
-- **B. Multi-tenancy**: 🔲 Tidak Relevan (*By Design*).
-- **C. Role & Permission**: ✅ Sangat Lengkap.
-- **D. API untuk Mobile**: ✅ Sangat Lengkap.
-- **E. Filament Admin**: ✅ Sangat Baik.
-- **F. Utilitas & Helper**: ⚠️ Cukup (Kehilangan Activity Log, Export/Import, Global Search).
+| Fitur | Status | Catatan |
+|-------|--------|---------|
+| OTP (One-Time Password) | ✅ Lengkap | `OtpService` + `OtpCode` model + SMS interface. Endpoint: send, verify, update phone. |
+| App Version Check | ✅ Lengkap | `GET /api/v1/app/version` — untuk force update di mobile. `AppVersionResource` di Filament. |
+| App Configuration | ✅ Lengkap | `GET /api/v1/app/config` — key-value config store dengan caching. Type-aware casting. |
+| Maintenance Mode (API-level) | ✅ Lengkap | `CheckMaintenance` middleware mengecek `AppConfig.maintenance_mode`. Return 503 saat aktif. |
+| Device Tracking | ✅ Lengkap | `UserDevice` model — tracking device ID, platform, OS version, push token. Upsert pada login. |
+| Region/Lokasi Indonesia | ✅ Lengkap | Custom artisan command `regions:download` + `regions:seed` — 245K records (Country, State, City, District, Village). |
+| API Documentation (OpenAPI) | ✅ Lengkap | Scramble dengan Stoplight Elements UI di `/docs/api`. |
 
-### **Skor Akhir: 9.0 / 10**
+---
 
-> **Justifikasi**: Dari sisi kebutuhan **Mobile Backend (API)**, starter project ini luar biasa lengkap dan berhak mendapatkan nilai sempurna. Ia telah memiliki API auth handal (Passport), refresh token, rate-limiting ketat, device tracking, in-app notification center, force-update, live app-config, OTP SMS, dan file upload. Pengurangan poin hingga angka **9.0** dikarenakan ketiadaan fitur user-facing yang esensial untuk web-flow seperti register akun mandiri, verifikasi email, reset password mandiri, serta pencatatan audit trail (activity log) dan utility export-import data pada area admin panel.
+## Ringkasan Status
+
+| Kategori | ✅ Lengkap | ⚠️ Sebagian | ❌ Belum Ada |
+|----------|-----------|-------------|-------------|
+| A. Auth & User Management | 3 | 2 | 5 |
+| B. Multi-tenancy & Subscription | 0 | 0 | 6 |
+| C. Role & Permission | 3 | 2 | 0 |
+| D. API untuk Mobile | 8 | 0 | 0 |
+| E. Filament Admin | 5 | 0 | 2 |
+| F. Utilitas & Helper | 1 | 2 | 5 |
+| **TOTAL** | **20** | **6** | **18** |
+
+---
+
+## Fitur Paling Mendesak untuk Ditambahkan
+
+1. 🔥 **User Registration endpoint** — API untuk self-registration (dengan atau tanpa approval flow)
+2. 🔥 **Email Verification** — Uncomment `MustVerifyEmail`, endpoint verify email
+3. 🔥 **Password Reset via API** — Forgot password flow untuk mobile user
+4. ⚠️ **Activity Log** — `spatie/laravel-activitylog` untuk audit trail CRUD
+5. ⚠️ **Logout dari semua device** — Revoke all tokens endpoint
+6. ⚠️ **Filament Shield / Resource permissions** — Enforce RBAC di setiap Filament resource
+7. 💡 **Export data** — Excel/PDF export untuk Filament resources
+8. 💡 **CI/CD Pipeline** — GitHub Actions untuk quality gate otomatis
+
+---
+
+## Skor Akhir: 6/10
+
+**Justifikasi:** Untuk fitur API mobile, project ini sangat lengkap (8/8 fitur lengkap). Fitur-fitur non-standar seperti OTP, device tracking, app version check, maintenance mode, dan push notification sudah implementasi — ini adalah nilai tambah signifikan. Namun beberapa fitur standar fundamental masih kurang: user registration, email verification, password reset, activity log, dan seluruh stack multi-tenancy. Jika multi-tenancy dianggap tidak relevan, skor naik ke ~7/10.

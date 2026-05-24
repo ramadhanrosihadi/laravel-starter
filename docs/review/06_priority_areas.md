@@ -1,246 +1,465 @@
-# Deep Dive Area Prioritas
+# 06 — Deep Dive Area Prioritas
 
-Dokumen ini berisi analisis sangat mendalam terhadap 5 area prioritas utama pada proyek **Laravel Starter**, dilengkapi dengan temuan kode spesifik, masalah potensial, kode perbaikan konkret, dan estimasi tingkat effort perbaikan.
-
----
-
-## 1. Auth & Authorization (Estimasi Effort: S - Small)
-
-### Kode yang Ditemukan
-Di dalam [app/Services/Auth/AuthService.php](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/app/Services/Auth/AuthService.php#L131-L146) pada method `issueToken`:
-
-```php
-    private function issueToken(array $params): array
-    {
-        $params = [
-            'client_id' => (string) config('passport.password_client.id'),
-            'client_secret' => (string) config('passport.password_client.secret'),
-            'scope' => '',
-            ...$params,
-        ];
-
-        $request = Request::create('/oauth/token', 'POST', $params);
-        $response = app()->handle($request);
-
-        /** @var array<string, mixed> $data */
-        $data = json_decode((string) $response->getContent(), true) ?: [];
-
-        if ($response->getStatusCode() !== 200) {
-            throw new AuthenticationException('Invalid credentials.');
-        }
-        // ...
-```
-
-### Masalah Spesifik
-Ketika `client_id` atau `client_secret` Passport Password Client tidak diset di `.env` (atau database belum terinstall Passport client melalui `php artisan passport:client --password`), endpoint login akan mengembalikan status `401` dengan pesan **"Invalid credentials."**. 
-
-Ini adalah **kesalahan masking**. Dari sudut pandang pengguna/developer, ini seolah-olah terjadi salah ketik password (user error), padahal aslinya adalah **kesalahan konfigurasi server (configuration error)**. Masking ini membuat proses debugging di tingkat staging/production menjadi sangat membingungkan.
-
-### Rekomendasi Perbaikan
-Bedakan response error ketika status code bukan `400`/`401` (invalid username/password) dengan error internal server (seperti client secret tidak cocok/tidak ada).
-
-```php
-        if ($response->getStatusCode() !== 200) {
-            $errorMsg = $data['error'] ?? 'Authentication failed';
-            
-            // Jika dalam mode debug, bocorkan detail internal error untuk DX yang lebih baik
-            if (config('app.debug') && in_array($errorMsg, ['unsupported_grant_type', 'invalid_client'])) {
-                throw new \RuntimeException("Passport configuration error: {$errorMsg}. Did you run: php artisan passport:client --password?");
-            }
-
-            throw new AuthenticationException('Invalid credentials.');
-        }
-```
+> Analisa mendalam untuk 5 area prioritas dengan code snippet, masalah spesifik, contoh perbaikan, dan estimasi effort.
+> Direview: 2026-05-24 | Reviewer: Antigravity AI Agent
 
 ---
 
-## 2. Multi-tenancy (Estimasi Effort: L - Large)
+## 1. Auth & Authorization — Deep Dive
 
-### Kode yang Ditemukan
-Tidak ada kode multi-tenancy saat ini (proyek terkonfigurasi sebagai single-tenant, sengaja dihindari sesuai keputusan desain arsitektur).
+### 1.1 Kode yang Ditemukan
 
-### Masalah Spesifik
-Jika di masa depan proyek ini beralih menjadi sistem SaaS / Multi-tenant dengan arsitektur **Shared Database (Single DB, Column `tenant_id`)**, kerentanan terbesar adalah kebocoran data lintas-tenant (**cross-tenant data leakage**). Developer bisa saja lupa menambahkan klausa `->where('tenant_id', $tenantId)` secara manual pada setiap query Eloquent.
-
-### Rekomendasi Perbaikan
-Gunakan mekanisme **Global Query Scope** pada Laravel. Setiap kali ada model Eloquent yang bersifat multi-tenant, model tersebut harus menyertakan Trait `BelongsToTenant` yang mengaplikasikan scope penyaringan secara otomatis.
-
-1. **Buat TenantScope**:
+**Proxy Pattern Login** (`app/Services/Auth/AuthService.php` baris 21-41):
 ```php
-namespace App\Support\Tenancy;
-
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Scope;
-
-class TenantScope implements Scope
+public function login(string $email, string $password, array $deviceInfo = []): array
 {
-    public function apply(Builder $builder, Model $model): void
-    {
-        if (auth()->check() && auth()->user()->tenant_id !== null) {
-            $builder->where('tenant_id', auth()->user()->tenant_id);
-        }
+    $user = User::query()->where('email', $email)->first();
+
+    if ($user !== null && ! $user->is_active) {
+        throw new AuthorizationException('Your account is inactive.');
     }
+
+    $tokens = $this->issueToken([
+        'grant_type' => 'password',
+        'username' => $email,
+        'password' => $password,
+    ]);
+
+    if ($user !== null && isset($deviceInfo['device_id'], $deviceInfo['platform'])) {
+        $this->upsertDevice($user, $deviceInfo);
+    }
+
+    return $tokens;
 }
 ```
 
-2. **Buat Trait `BelongsToTenant`**:
+**Super-admin Bypass** (`app/Providers/AppServiceProvider.php` baris 56):
 ```php
-namespace App\Support\Tenancy;
+Gate::before(fn (?User $user, string $ability): ?bool => 
+    ($user && $user->hasRole('super-admin')) ? true : null
+);
+```
 
-use App\Models\Tenant;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
-trait BelongsToTenant
+**OTP Login** (`app/Services/Auth/AuthService.php` baris 49-60):
+```php
+public function issueTokenForUser(User $user): array
 {
-    public static function bootBelongsToTenant(): void
-    {
-        static::addGlobalScope(new TenantScope());
+    $result = $user->createToken('otp-login');
+    $expiresAt = $result->token->expires_at ?? now()->addHours(8);
 
-        static::creating(function ($model): void {
-            if (auth()->check() && auth()->user()->tenant_id !== null) {
-                $model->tenant_id = auth()->user()->tenant_id;
+    return [
+        'access_token' => $result->accessToken,
+        'refresh_token' => null,  // Personal Access Token tidak punya refresh token
+        'token_type' => 'Bearer',
+        'expires_in' => (int) now()->diffInSeconds($expiresAt),
+    ];
+}
+```
+
+### 1.2 Masalah Spesifik
+
+#### ⚠️ Masalah 1: `MustVerifyEmail` Dinonaktifkan
+- **File:** `app/Models/User.php` baris 5
+- **Kode:** `// use Illuminate\Contracts\Auth\MustVerifyEmail;`
+- **Dampak:** User bisa login dengan email yang belum diverifikasi — potensi spam account.
+- **Estimasi Effort:** S (Small)
+
+#### ⚠️ Masalah 2: OTP Login Tidak Punya Refresh Token
+- **File:** `app/Services/Auth/AuthService.php` baris 49-60
+- **Kode:** `'refresh_token' => null` — Personal Access Token tidak mendukung refresh.
+- **Dampak:** User yang login via OTP harus re-login setiap 8 jam. Inkonsistensi pengalaman dengan login password yang mendapat refresh token 30 hari.
+- **Estimasi Effort:** M (Medium) — perlu redesign OTP login flow agar menggunakan Password Grant atau custom grant.
+
+#### ⚠️ Masalah 3: Race Condition pada Device Upsert
+- **File:** `app/Services/Auth/AuthService.php` baris 105-121
+- **Kode:** `UserDevice::query()->updateOrCreate(...)` — tanpa DB transaction.
+- **Dampak:** Login concurrent dari device yang sama bisa menyebabkan duplicate insert sebelum unique constraint check.
+- **Estimasi Effort:** S (Small)
+
+#### 💡 Masalah 4: Tidak Ada Endpoint "Logout All Devices"
+- **File:** `app/Services/Auth/AuthService.php` baris 75-100
+- **Dampak:** User yang kehilangan device tidak bisa invalidasi semua session.
+- **Estimasi Effort:** S (Small)
+
+### 1.3 Contoh Perbaikan
+
+**Perbaikan Masalah 1 — Aktifkan Email Verification:**
+```php
+// app/Models/User.php
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+class User extends Authenticatable implements FilamentUser, OAuthenticatable, MustVerifyEmail
+{
+    // ...
+}
+```
+
+**Perbaikan Masalah 4 — Logout All Devices:**
+```php
+// app/Services/Auth/AuthService.php — tambahkan method
+public function logoutAllDevices(User $user): void
+{
+    // Revoke all access tokens
+    $user->tokens()->update(['revoked' => true]);
+    
+    // Revoke all refresh tokens
+    RefreshToken::query()
+        ->whereIn('access_token_id', $user->tokens()->pluck('id'))
+        ->update(['revoked' => true]);
+    
+    // Nullify all push tokens
+    UserDevice::query()
+        ->where('user_id', $user->getKey())
+        ->update(['push_token' => null]);
+}
+```
+
+---
+
+## 2. Multi-tenancy — Deep Dive
+
+### 2.1 Kode yang Ditemukan
+
+**Tidak ada kode multi-tenancy yang ditemukan.** Seluruh data dalam project ini beroperasi dalam satu namespace global.
+
+### 2.2 Masalah Spesifik
+
+#### 🔥 Masalah Utama: Tidak Ada Arsitektur Multi-tenancy
+- **Dampak:** Project tidak bisa digunakan sebagai SaaS tanpa refactoring signifikan.
+- **Estimasi Effort:** XL (Extra Large) — arsitektur fundamental yang mempengaruhi hampir semua layer.
+
+### 2.3 Rekomendasi Arsitektur
+
+Jika multi-tenancy dibutuhkan, ada dua pendekatan:
+
+**Opsi A: Single Database + `tenant_id` (Lebih Sederhana)**
+```php
+// Migration: tambahkan tenant_id ke tabel yang perlu isolasi
+Schema::table('categories', function (Blueprint $table) {
+    $table->foreignId('tenant_id')->constrained()->index();
+});
+
+// Model: Global scope
+class Category extends Model
+{
+    protected static function booted(): void
+    {
+        static::addGlobalScope('tenant', function (Builder $query) {
+            if (auth()->check() && auth()->user()->tenant_id) {
+                $query->where('tenant_id', auth()->user()->tenant_id);
             }
         });
     }
+}
+```
 
-    public function tenant(): BelongsTo
+**Opsi B: Stancl/Tenancy Package (Lebih Lengkap)**
+```bash
+composer require stancl/tenancy
+php artisan tenancy:install
+```
+
+**Rekomendasi:** Jika multi-tenancy memang target, mulai dengan Opsi A (single DB + tenant_id) karena lebih sederhana dan kompatibel dengan Filament. Stancl/Tenancy lebih cocok untuk kasus yang memerlukan database per-tenant.
+
+---
+
+## 3. API Versioning & Response — Deep Dive
+
+### 3.1 Kode yang Ditemukan
+
+**Response Wrapper** (`app/Support/ApiResponse.php` baris 12-39):
+```php
+public static function success(
+    $data = null,
+    string $message = 'OK',
+    int $status = 200,
+    array $meta = []
+): JsonResponse {
+    $payload = [
+        'success' => true,
+        'message' => $message,
+    ];
+
+    if ($data instanceof AnonymousResourceCollection && $data->resource instanceof AbstractPaginator) {
+        $paginator = $data->resource;
+        $payload['data'] = $data->resolve();
+        $meta = ['pagination' => self::paginationMeta($paginator)] + $meta;
+    } elseif ($data instanceof AbstractPaginator) {
+        $payload['data'] = $data->items();
+        $meta = ['pagination' => self::paginationMeta($data)] + $meta;
+    } else {
+        $payload['data'] = $data;
+    }
+
+    if (! empty($meta)) {
+        $payload['meta'] = $meta;
+    }
+
+    return response()->json($payload, $status);
+}
+```
+
+**Spatie QueryBuilder** (`app/Http/Controllers/Api/V1/CategoryController.php` baris 24-33):
+```php
+$categories = QueryBuilder::for(Category::class)
+    ->allowedFilters(
+        'name',
+        'slug',
+        AllowedFilter::exact('is_active'),
+    )
+    ->allowedSorts('name', 'slug', 'is_active', 'created_at', 'updated_at')
+    ->defaultSort('name')
+    ->paginate($perPage)
+    ->appends($request->query());
+```
+
+### 3.2 Masalah Spesifik
+
+#### 💡 Masalah 1: `$data` Parameter Tanpa Type Hint
+- **File:** `app/Support/ApiResponse.php` baris 13
+- **Kode:** `$data = null` — parameter tanpa type hint.
+- **Dampak:** PHPStan level rendah mungkin tidak menangkap tipe yang salah.
+- **Estimasi Effort:** S (Small)
+
+#### 💡 Masalah 2: Tidak Ada Error Code Standar
+- **File:** Seluruh codebase
+- **Dampak:** Error response menggunakan `code` parameter optional (`ApiResponse::error()`) tapi tidak ada enum/constant untuk error codes. Flutter client harus parsing message string.
+- **Estimasi Effort:** S (Small)
+
+### 3.3 Contoh Perbaikan
+
+**Perbaikan Masalah 2 — Error Code Enum:**
+```php
+// app/Support/Enums/ApiErrorCode.php
+enum ApiErrorCode: string
+{
+    case AuthInvalidCredentials = 'AUTH_INVALID_CREDENTIALS';
+    case AuthInactiveAccount = 'AUTH_INACTIVE_ACCOUNT';
+    case AuthTokenExpired = 'AUTH_TOKEN_EXPIRED';
+    case ValidationFailed = 'VALIDATION_FAILED';
+    case ResourceNotFound = 'RESOURCE_NOT_FOUND';
+    case RateLimitExceeded = 'RATE_LIMIT_EXCEEDED';
+    case MaintenanceMode = 'MAINTENANCE_MODE';
+}
+
+// Penggunaan:
+return ApiResponse::error(
+    'Invalid credentials.',
+    401,
+    code: ApiErrorCode::AuthInvalidCredentials->value
+);
+```
+
+---
+
+## 4. Filament Panel — Deep Dive
+
+### 4.1 Kode yang Ditemukan
+
+**Panel Provider** (`app/Providers/Filament/AdminPanelProvider.php` baris 24-63):
+```php
+public function panel(Panel $panel): Panel
+{
+    return $panel
+        ->default()
+        ->id('admin')
+        ->path('admin')
+        ->login()
+        ->brandName('Laravel Starter')
+        ->brandLogo(asset('images/logo-light.svg'))
+        ->brandLogoHeight('2.5rem')
+        ->favicon(asset('favicon.ico'))
+        ->colors(['primary' => Color::Indigo])
+        ->databaseNotifications()
+        ->discoverResources(app_path('Filament/Resources'), 'App\Filament\Resources')
+        ->discoverPages(app_path('Filament/Pages'), 'App\Filament\Pages')
+        ->pages([Dashboard::class])
+        ->discoverWidgets(app_path('Filament/Widgets'), 'App\Filament\Widgets')
+        ->widgets([StarterOverview::class, AccountWidget::class])
+        ->middleware([...])
+        ->authMiddleware([Authenticate::class]);
+}
+```
+
+**Panel Access Control** (`app/Models/User.php` baris 43-46):
+```php
+public function canAccessPanel(Panel $panel): bool
+{
+    return $this->is_active && $this->hasAnyRole(self::PANEL_ROLES);
+}
+```
+
+### 4.2 Masalah Spesifik
+
+#### ⚠️ Masalah 1: Tidak Ada Per-Resource Permission Enforcement
+- **File:** Semua file di `app/Filament/Resources/`
+- **Dampak:** Setelah user masuk panel (via `canAccessPanel()`), mereka bisa mengakses semua resource. Role `staff` yang seharusnya hanya bisa akses Category, bisa melihat Users dan Roles di sidebar.
+- **Estimasi Effort:** M (Medium)
+
+#### 💡 Masalah 2: Tidak Ada Dark Logo Variant
+- **File:** `AdminPanelProvider.php` baris 32
+- **Kode:** `->brandLogo(asset('images/logo-light.svg'))` — hanya logo light.
+- **Dampak:** Jika dark mode diaktifkan, logo mungkin tidak terlihat.
+- **Estimasi Effort:** S (Small)
+
+#### 💡 Masalah 3: Tidak Ada Filament Global Search
+- **File:** `AdminPanelProvider.php`
+- **Dampak:** User admin tidak bisa mencari across resources.
+- **Estimasi Effort:** S (Small)
+
+### 4.3 Contoh Perbaikan
+
+**Perbaikan Masalah 1 — Resource Permission (Manual tanpa Shield):**
+```php
+// app/Filament/Resources/Categories/CategoryResource.php
+use App\Models\User;
+
+class CategoryResource extends Resource
+{
+    // ...
+
+    public static function canViewAny(): bool
     {
-        return $this->belongsTo(Tenant::class);
+        return auth()->user()?->can('categories.viewAny') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('categories.create') ?? false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return auth()->user()?->can('categories.update') ?? false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return auth()->user()?->can('categories.delete') ?? false;
     }
 }
 ```
 
----
-
-## 3. API Versioning & Response (Estimasi Effort: M - Medium)
-
-### Kode yang Ditemukan
-Di [app/Http/Controllers/Api/V1/CategoryController.php](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/app/Http/Controllers/Api/V1/CategoryController.php#L35-L45) pada method `index`:
-
-```php
-        return ApiResponse::success(
-            data: CategoryResource::collection($categories->getCollection())->resolve($request),
-            meta: [
-                'pagination' => [
-                    'current_page' => $categories->currentPage(),
-                    'last_page' => $categories->lastPage(),
-                    'per_page' => $categories->perPage(),
-                    'total' => $categories->total(),
-                ],
-            ],
-        );
-```
-
-### Masalah Spesifik
-Terjadi **duplikasi kode boilerplate pagination** pada setiap controller API index. Hal ini disebabkan karena pembungkus `ApiResponse::success` di [ApiResponse.php](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/app/Support/ApiResponse.php#L22-L24) hanya mendeteksi instance `AbstractPaginator` murni untuk otomatisasi metadata pagination:
-
-```php
-        if ($data instanceof AbstractPaginator) {
-            $payload['data'] = $data->items();
-            $meta = ['pagination' => self::paginationMeta($data)] + $meta;
-        }
-```
-Namun, di controller, developer terpaksa memanggil `CategoryResource::collection($categories->getCollection())->resolve()` yang menghasilkan tipe data **Array murni**, sehingga deteksi `AbstractPaginator` di helper `ApiResponse` terlewati.
-
-### Rekomendasi Perbaikan
-Meningkatkan helper `ApiResponse::success` agar mendukung tipe data `AnonymousResourceCollection` yang menyimpan instance paginator asli di dalam properti `$data->resource`.
-
-Ubah [app/Support/ApiResponse.php](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/app/Support/ApiResponse.php#L22-L27) menjadi:
-
-```php
-        use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-
-        if ($data instanceof AnonymousResourceCollection && $data->resource instanceof AbstractPaginator) {
-            $payload['data'] = $data->resolve();
-            $meta = ['pagination' => self::paginationMeta($data->resource)] + $meta;
-        } elseif ($data instanceof AbstractPaginator) {
-            $payload['data'] = $data->items();
-            $meta = ['pagination' => self::paginationMeta($data)] + $meta;
-        } else {
-            $payload['data'] = $data;
-        }
-```
-
-Dengan peningkatan ini, pemanggilan di `CategoryController` menjadi sangat singkat dan bersih, bebas dari duplikasi pagination:
-
-```php
-        return ApiResponse::success(CategoryResource::collection($categories));
+**Atau install Filament Shield:**
+```bash
+composer require bezhansalleh/filament-shield
+php artisan shield:install
+php artisan shield:generate --all
 ```
 
 ---
 
-## 4. Filament Panel (Estimasi Effort: S - Small)
+## 5. Testing Setup — Deep Dive
 
-### Kode yang Ditemukan
-Di dalam [app/Providers/Filament/AdminPanelProvider.php](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/app/Providers/Filament/AdminPanelProvider.php#L31-L34):
+### 5.1 Kode yang Ditemukan
 
-```php
-            ->brandName('Laravel Starter')
-            ->colors([
-                'primary' => Color::Emerald,
-            ])
+**PHPUnit Config** (`phpunit.xml` baris 20-35):
+```xml
+<php>
+    <env name="APP_ENV" value="testing"/>
+    <env name="DB_CONNECTION" value="sqlite"/>
+    <env name="DB_DATABASE" value=":memory:"/>
+    <env name="CACHE_STORE" value="array"/>
+    <env name="QUEUE_CONNECTION" value="sync"/>
+    <env name="SESSION_DRIVER" value="array"/>
+</php>
 ```
 
-### Masalah Spesifik
-Tampilan back-office Filament masih terlihat generik. Untuk memberikan kesan premium (**premium design aesthetics**) sejak pandangan pertama bagi pengguna starter, branding default perlu dimaksimalkan dengan logo kustom (SVG/PNG), dark-mode switcher otomatis yang sleek, serta default favicon.
-
-### Rekomendasi Perbaikan
-Maksimalkan konfigurasi brand di `AdminPanelProvider`:
-
+**Test Base** (`tests/TestCase.php`):
 ```php
-            ->brandName('Antigravity Starter')
-            ->brandLogo(asset('images/logo-light.svg'))
-            ->brandLogoHeight('2.5rem')
-            ->favicon(asset('favicon.ico'))
-            ->colors([
-                'primary' => Color::Indigo, // Indigo memberikan kesan lebih premium/modern
-                'gray' => Color::Slate,
-            ])
-            ->databaseNotifications() // Aktifkan database notifications bawaan Filament
+abstract class TestCase extends BaseTestCase
+{
+    use CreatesApplication;
+}
+```
+
+### 5.2 Masalah Spesifik
+
+#### 🔥 Masalah 1: SQLite In-Memory vs PostgreSQL Production
+- **File:** `phpunit.xml` baris 26-28
+- **Kode:** `DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`
+- **Dampak:** SQLite tidak mendukung semua fitur PostgreSQL:
+  - JSONB column behavior berbeda
+  - UUID/ULID generation behavior berbeda
+  - Enum column handling berbeda
+  - `ILIKE` vs `LIKE` case sensitivity berbeda
+  - PostgreSQL-specific constraints tidak divalidasi
+- Test bisa hijau di SQLite tapi gagal di PostgreSQL production.
+- **Estimasi Effort:** S (Small) — hanya ubah `phpunit.xml`
+
+#### ⚠️ Masalah 2: Tidak Ada Unit Test untuk Service
+- **File:** `tests/Unit/Services/` — hanya `.gitkeep`
+- **Dampak:** `AuthService`, `OtpService`, `PushNotificationService` tidak ditest secara isolasi. Bug dalam logika bisnis hanya terdeteksi via feature test (yang lebih lambat dan kurang presisi).
+- **Estimasi Effort:** M (Medium)
+
+#### ⚠️ Masalah 3: Tidak Ada CI Pipeline
+- **File:** Tidak ada `.github/workflows/`
+- **Dampak:** Quality gate (Pint, PHPStan, PHPUnit) hanya berjalan manual. Developer bisa push kode yang gagal test.
+- **Estimasi Effort:** S (Small)
+
+#### 💡 Masalah 4: Test Coverage Tidak Diukur
+- **File:** `phpunit.xml` — tidak ada `<coverage>` configuration
+- **Dampak:** Tidak bisa mengukur dan melacak test coverage secara objektif.
+- **Estimasi Effort:** S (Small)
+
+### 5.3 Contoh Perbaikan
+
+**Perbaikan Masalah 1 — Gunakan PostgreSQL untuk Test:**
+```xml
+<!-- phpunit.xml — hapus SQLite override, gunakan .env.testing -->
+<php>
+    <env name="APP_ENV" value="testing"/>
+    <env name="DB_CONNECTION" value="pgsql"/>
+    <env name="DB_DATABASE" value="laravel_starter_test"/>
+    <!-- sisanya tetap -->
+</php>
+```
+
+**Perbaikan Masalah 3 — GitHub Actions CI:**
+```yaml
+# .github/workflows/ci.yml
+name: CI
+on: [push, pull_request]
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: laravel_starter_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: secret
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - run: composer install --no-interaction
+      - run: vendor/bin/pint --test
+      - run: vendor/bin/phpstan analyse --memory-limit=1G
+      - run: php artisan test
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: localhost
+          DB_DATABASE: laravel_starter_test
+          DB_USERNAME: postgres
+          DB_PASSWORD: secret
 ```
 
 ---
 
-## 5. Testing Setup (Estimasi Effort: M - Medium)
+## Ringkasan Estimasi Effort per Area
 
-### Kode yang Ditemukan
-Di dalam [tests/Feature/RegionSeederTest.php](file:///c:/Users/62822/Documents/Work/laravel/laravel-starter/tests/Feature/RegionSeederTest.php#L103-L122) pada method `dataFilesExist`:
+| Area | Temuan Kritis | Temuan Penting | Temuan Minor | Total Effort |
+|------|---------------|----------------|--------------|--------------|
+| Auth & Authorization | 1 | 2 | 1 | M-L |
+| Multi-tenancy | 1 (fundamental) | 0 | 0 | XL |
+| API Response | 0 | 0 | 2 | S |
+| Filament Panel | 0 | 1 | 2 | M |
+| Testing Setup | 1 | 2 | 1 | M |
+| **TOTAL** | **3** | **5** | **6** | **L-XL** |
 
-```php
-    private function dataFilesExist(): bool
-    {
-        $required = [
-            storage_path('app/regions/dr5hn/countries.json'),
-            storage_path('app/regions/dr5hn/states.json'),
-            // ...
-        ];
-
-        foreach ($required as $file) {
-            if (! file_exists($file)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-```
-
-### Masalah Spesifik
-Test suite regional Indonesia berukuran raksasa dan bergantung sepenuhnya pada berkas JSON eksternal yang diunduh secara manual (`php artisan regions:download`). Jika file-file ini belum diunduh, tes dilewati (**skipped**). Namun, pada environment **CI (Continuous Integration)** baru (seperti GitHub Actions), proses pengunduhan langsung via internet dapat menyebabkan keterlambatan testing atau kegagalan acak akibat rate limit API eksternal.
-
-### Rekomendasi Perbaikan
-Gunakan **Mocking / Fixtures** khusus untuk testing.
-Buat file data dummy berukuran mini (fixtures) di dalam folder `tests/Fixtures/regions/` yang berisi 2-3 baris negara/provinsi/kota. Di dalam `RegionSeeder` dan pengujian, deteksi mode testing untuk mengalihkan pemindaian ke direktori fixtures lokal ini alih-alih data asli sebesar ratusan megabyte.
-
-```php
-    protected function getSourcePath(string $filename): string
-    {
-        if (app()->environment('testing')) {
-            return base_path("tests/Fixtures/regions/{$filename}");
-        }
-
-        return storage_path("app/regions/{$filename}");
-    }
-```
-Ini akan menjamin testing suite berjalan instan (di bawah 1 detik) baik di lokal maupun di server CI tanpa perlu mengunduh file asli terlebih dahulu.
+> **Keterangan Effort:** S = <2 jam, M = 2-8 jam, L = 1-2 hari, XL = >3 hari

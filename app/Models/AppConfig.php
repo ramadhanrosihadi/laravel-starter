@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\Enums\AppConfigType;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Cache;
  */
 class AppConfig extends Model
 {
+    use HasFactory;
+
     protected $fillable = ['key', 'value', 'type', 'description'];
 
     protected function casts(): array

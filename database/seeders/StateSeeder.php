@@ -12,8 +12,8 @@ class StateSeeder extends Seeder
     {
         ini_set('memory_limit', '512M');
 
-        $statesPath = storage_path('app/regions/dr5hn/states.json');
-        $provincesPath = storage_path('app/regions/emsifa/provinces.json');
+        $statesPath = $this->getSourcePath('dr5hn/states.json');
+        $provincesPath = $this->getSourcePath('emsifa/provinces.json');
 
         if (! file_exists($statesPath)) {
             $this->command->error('states.json not found. Run: php artisan regions:download');
@@ -100,5 +100,18 @@ class StateSeeder extends Seeder
         }
 
         $this->command->info('  Indonesia provinces seeded: '.count($idRows));
+    }
+
+    /**
+     * Returns the base directory for region source data.
+     * In testing environment, redirects to test fixtures.
+     */
+    protected function getSourcePath(string $relative): string
+    {
+        if (app()->environment('testing')) {
+            return base_path("tests/Fixtures/regions/{$relative}");
+        }
+
+        return storage_path("app/regions/{$relative}");
     }
 }

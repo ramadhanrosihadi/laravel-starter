@@ -32,17 +32,7 @@ class CategoryController extends Controller
             ->paginate($perPage)
             ->appends($request->query());
 
-        return ApiResponse::success(
-            data: CategoryResource::collection($categories->getCollection())->resolve($request),
-            meta: [
-                'pagination' => [
-                    'current_page' => $categories->currentPage(),
-                    'last_page' => $categories->lastPage(),
-                    'per_page' => $categories->perPage(),
-                    'total' => $categories->total(),
-                ],
-            ],
-        );
+        return ApiResponse::success(CategoryResource::collection($categories));
     }
 
     public function store(StoreCategoryRequest $request): JsonResponse

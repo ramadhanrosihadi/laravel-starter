@@ -36,6 +36,9 @@ class AuthController extends Controller
             $request->only(['device_id', 'platform', 'os_version', 'app_version', 'device_name', 'push_token']),
         );
 
+        $user = User::query()->where('email', $request->string('email')->toString())->first();
+        $tokens['email_verified'] = $user?->hasVerifiedEmail() ?? false;
+
         return ApiResponse::success($tokens, 'Login successful');
     }
 

@@ -3,23 +3,28 @@
 namespace App\Support;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\AbstractPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class ApiResponse
 {
     public static function success(
-        mixed $data = null,
+        $data = null,
         string $message = 'OK',
         int $status = 200,
-        array $meta = [],
+        array $meta = []
     ): JsonResponse {
         $payload = [
             'success' => true,
             'message' => $message,
         ];
 
-        if ($data instanceof AbstractPaginator) {
+        if ($data instanceof AnonymousResourceCollection && $data->resource instanceof AbstractPaginator) {
+            $paginator = $data->resource;
+            $payload['data'] = $data->resolve();
+            $meta = ['pagination' => self::paginationMeta($paginator)] + $meta;
+        } elseif ($data instanceof AbstractPaginator) {
             $payload['data'] = $data->items();
             $meta = ['pagination' => self::paginationMeta($data)] + $meta;
         } else {
@@ -37,7 +42,7 @@ class ApiResponse
         string $message,
         int $status = 400,
         array $errors = [],
-        ?string $code = null,
+        ?string $code = null
     ): JsonResponse {
         $payload = [
             'success' => false,

@@ -9,8 +9,8 @@ class CitySeeder extends Seeder
 {
     public function run(): void
     {
-        $citiesPath = storage_path('app/regions/dr5hn/cities.json');
-        $regenciesPath = storage_path('app/regions/emsifa/regencies.json');
+        $citiesPath = $this->getSourcePath('dr5hn/cities.json');
+        $regenciesPath = $this->getSourcePath('emsifa/regencies.json');
 
         if (! file_exists($citiesPath)) {
             $this->command->error('cities.json not found. Run: php artisan regions:download');
@@ -28,14 +28,22 @@ class CitySeeder extends Seeder
 
         // --- Build lookup maps from DB ---
 
-        // dr5hn state numeric ID to region.id (stored in meta->source_id by StateSeeder)
-        $drStateMap = DB::table('regions')
+        // dr5hn state numeric ID to region.id (stored in meta->source_id by StateSeeder).
+        // Uses PHP-side filtering for cross-database compatibility (SQLite in tests, PostgreSQL in production).
+        $drStateMap = [];
+        DB::table('regions')
             ->where('type', 'state')
-            ->whereRaw("meta->>'source_id' IS NOT NULL")
-            ->selectRaw("id, (meta->>'source_id')::bigint AS dr5hn_id")
-            ->get()
-            ->pluck('id', 'dr5hn_id')
-            ->toArray();
+            ->whereNotNull('meta')
+            ->select(['id', 'meta'])
+            ->orderBy('id')
+            ->chunk(500, function ($rows) use (&$drStateMap) {
+                foreach ($rows as $row) {
+                    $meta = is_string($row->meta) ? json_decode($row->meta, true) : (array) $row->meta;
+                    if (! empty($meta['source_id'])) {
+                        $drStateMap[(int) $meta['source_id']] = $row->id;
+                    }
+                }
+            });
 
         // BPS province code to region.id for Indonesia's provinces
         $indonesiaId = DB::table('regions')->where('type', 'country')->where('code', 'ID')->value('id');
@@ -117,6 +125,19 @@ class CitySeeder extends Seeder
         }
 
         $this->command->info('  Indonesia regencies seeded: '.count($idRows));
+    }
+
+    /**
+     * Returns the base directory for region source data.
+     * In testing environment, redirects to test fixtures.
+     */
+    protected function getSourcePath(string $relative): string
+    {
+        if (app()->environment('testing')) {
+            return base_path("tests/Fixtures/regions/{$relative}");
+        }
+
+        return storage_path("app/regions/{$relative}");
     }
 
     /**

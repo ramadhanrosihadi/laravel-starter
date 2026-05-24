@@ -27,7 +27,7 @@ Tujuan audit:
 
 ### LANGKAH 1 — Persiapan Folder Output
 
-Sebelum mulai analisa apapun, buat struktur folder berikut jika belum ada:
+Sebelum mulai analisa apapun, buat struktur folder berikut jika belum ada (jika sudah ada, maka update file existing):
 
 ```
 docs/

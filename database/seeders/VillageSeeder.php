@@ -9,7 +9,7 @@ class VillageSeeder extends Seeder
 {
     public function run(): void
     {
-        $path = storage_path('app/regions/emsifa/villages.json');
+        $path = $this->getSourcePath('emsifa/villages.json');
 
         if (! file_exists($path)) {
             $this->command->error('emsifa/villages.json not found. Run: php artisan regions:download');
@@ -60,6 +60,19 @@ class VillageSeeder extends Seeder
         }
 
         $this->command->info("  Villages (kelurahan/desa) seeded: {$count}");
+    }
+
+    /**
+     * Returns the base directory for region source data.
+     * In testing environment, redirects to test fixtures.
+     */
+    protected function getSourcePath(string $relative): string
+    {
+        if (app()->environment('testing')) {
+            return base_path("tests/Fixtures/regions/{$relative}");
+        }
+
+        return storage_path("app/regions/{$relative}");
     }
 
     /**

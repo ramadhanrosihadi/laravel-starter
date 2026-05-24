@@ -142,6 +142,13 @@ class AuthService
         $data = json_decode((string) $response->getContent(), true) ?: [];
 
         if ($response->getStatusCode() !== 200) {
+            $errorType = $data['error'] ?? null;
+            $errorMsg = $data['message'] ?? $data['error_description'] ?? $errorType ?? 'Unknown error';
+
+            if (config('app.debug') && in_array($errorType, ['unsupported_grant_type', 'invalid_client'], true)) {
+                throw new \RuntimeException("Passport configuration error: {$errorMsg}. Did you run: php artisan passport:client --password?");
+            }
+
             throw new AuthenticationException('Invalid credentials.');
         }
 

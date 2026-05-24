@@ -29,15 +29,19 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('Laravel Starter')
+            ->brandLogo(asset('images/logo-light.svg'))
+            ->brandLogoHeight('2.5rem')
+            ->favicon(asset('favicon.ico'))
             ->colors([
-                'primary' => Color::Emerald,
+                'primary' => Color::Indigo,
             ])
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
+            ->databaseNotifications()
+            ->discoverResources(app_path('Filament/Resources'), 'App\Filament\Resources')
+            ->discoverPages(app_path('Filament/Pages'), 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
+            ->discoverWidgets(app_path('Filament/Widgets'), 'App\Filament\Widgets')
             ->widgets([
                 StarterOverview::class,
                 AccountWidget::class,
