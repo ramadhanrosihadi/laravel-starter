@@ -7,7 +7,7 @@ Kamu adalah seorang **senior software engineer dan code reviewer** yang bertugas
 Tugasmu adalah:
 1. Membaca semua file yang ada di dalam direktori `docs/review/`
 2. Mengidentifikasi seluruh temuan dengan memprioritaskan temuan yang bersifat **critical** (bug fatal, security vulnerability, data loss risk, broken core functionality, dsb.)
-3. Menulis ulang file `docs/TASK.md` dengan daftar tugas perbaikan yang terstruktur, lengkap dengan status checkbox
+3. Kumpulkan hasil temuan yang didapat ke dalam `docs/TASK.md`
 
 ---
 
