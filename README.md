@@ -20,6 +20,7 @@ Tujuannya adalah menyediakan kerangka kerja yang bersih, konsisten, dan siap dik
 | Back-office UI | Filament | `5.x` |
 | RBAC | spatie/laravel-permission | `7.x` |
 | Cache / Queue (opsional) | Redis | `7.x` |
+| Aset / Frontend | Node.js | `20.19+` atau `22.12+` (LTS direkomendasikan) |
 | PHP runtime lokal | Laravel Herd / Sail / Valet | sesuai OS |
 
 > ⚠️ **Catatan versi:** Semua versi di atas adalah rekomendasi pada saat dokumen dibuat. Di awal Sesi 1, jalankan `composer create-project laravel/laravel` dan cek rilis stable terbaru dari tiap package sebelum mengunci versi di `composer.json`.
@@ -57,9 +58,9 @@ Jika Anda baru saja melakukan *clone* pada project ini, ikuti langkah-langkah di
 
 ---
 
-### Opsi A: Instalasi Menggunakan Tooling Lokal (Composer / Makefile)
+### Opsi A: Instalasi Menggunakan Tooling Lokal (Composer)
 
-> **Prasyarat**: Anda wajib memiliki **PHP 8.3+**, **Composer 2**, **PostgreSQL 14+**, dan **Node 20+** terpasang di sistem operasi lokal Anda.
+> **Prasyarat**: Anda wajib memiliki **PHP 8.3+**, **Composer 2**, **PostgreSQL 14+**, dan **Node 20.19+ atau 22.12+ (LTS direkomendasikan)** terpasang di sistem operasi lokal Anda.
 > *Catatan Windows*: Jika PATH default Anda masih menggunakan PHP lama, Anda dapat mengarahkan path php secara manual atau menggunakan binary PHP 8.3 spesifik (mis. `C:\php8.3.6\php.exe`).
 
 ```bash
