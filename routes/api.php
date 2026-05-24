@@ -13,17 +13,17 @@ use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Support\ApiResponse;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Excel Import & Export Routes (Tanpa Middleware Auth)
-|--------------------------------------------------------------------------
-| Jika Anda ingin memproteksi endpoint ini dengan middleware auth Passport di kemudian hari,
-| Anda bisa menambahkan middleware: ->middleware('auth:api')
-*/
-Route::get('users/export', [UserExcelController::class, 'export']);
-Route::post('users/import', [UserExcelController::class, 'import']);
-
 Route::prefix('v1')->group(function (): void {
+    /*
+    |--------------------------------------------------------------------------
+    | Excel Import & Export Routes (Tanpa Middleware Auth)
+    |--------------------------------------------------------------------------
+    | Jika Anda ingin memproteksi endpoint ini dengan middleware auth Passport di kemudian hari,
+    | Anda bisa menambahkan middleware: ->middleware('auth:api')
+    */
+    Route::get('users/export', [UserExcelController::class, 'export']);
+    Route::post('users/import', [UserExcelController::class, 'import']);
+
     Route::get('health', HealthController::class);
 
     // Unauthenticated app info endpoints (no maintenance check — needed to show maintenance message)

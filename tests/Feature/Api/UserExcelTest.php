@@ -29,7 +29,7 @@ class UserExcelTest extends TestCase
             'email' => 'john@example.com',
         ]);
 
-        $response = $this->getJson('/api/users/export');
+        $response = $this->getJson('/api/v1/users/export');
 
         $response->assertStatus(200);
 
@@ -46,7 +46,7 @@ class UserExcelTest extends TestCase
      */
     public function test_import_endpoint_fails_when_no_file_uploaded(): void
     {
-        $response = $this->postJson('/api/users/import');
+        $response = $this->postJson('/api/v1/users/import');
 
         $response->assertStatus(400)
             ->assertJson([
@@ -63,7 +63,7 @@ class UserExcelTest extends TestCase
     {
         $file = UploadedFile::fake()->create('users.csv', 100);
 
-        $response = $this->postJson('/api/users/import', [
+        $response = $this->postJson('/api/v1/users/import', [
             'file' => $file,
         ]);
 
