@@ -31,8 +31,7 @@ class UploadAssetRequest extends FormRequest
                 'max:51200', // 50 MB dalam kilobyte
                 'mimes:jpeg,jpg,png,webp,gif,svg,mp4,mov,avi,webm,mp3,wav,ogg,m4a,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv',
             ],
-            'morphable_type' => ['required', 'string', 'max:255'],
-            'morphable_id' => ['required', 'integer'],
+            'type' => ['required', 'string', 'max:255'], // kategori logis file → folder GCS & kolom category
             'retain_until' => ['nullable', 'date'], // tidak diisi → NULL → file permanen
             'is_protected' => ['boolean'],
         ];

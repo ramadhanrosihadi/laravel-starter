@@ -48,8 +48,7 @@ class AssetUploadTest extends TestCase
         $response = $this->withToken($this->accessToken)
             ->postJson('/api/v1/assets/upload', [
                 'file' => $file,
-                'morphable_type' => 'user',
-                'morphable_id' => 1,
+                'type' => 'user',
             ])
             ->assertCreated()
             ->assertJsonPath('success', true)
@@ -82,8 +81,7 @@ class AssetUploadTest extends TestCase
         $response = $this->withToken($this->accessToken)
             ->postJson('/api/v1/assets/upload', [
                 'file' => $file,
-                'morphable_type' => 'user',
-                'morphable_id' => 1,
+                'type' => 'user',
             ])
             ->assertCreated();
 
@@ -96,8 +94,7 @@ class AssetUploadTest extends TestCase
 
         $this->postJson('/api/v1/assets/upload', [
             'file' => $file,
-            'morphable_type' => 'user',
-            'morphable_id' => 1,
+            'type' => 'user',
         ])->assertUnauthorized();
     }
 
@@ -106,7 +103,7 @@ class AssetUploadTest extends TestCase
         $this->withToken($this->accessToken)
             ->postJson('/api/v1/assets/upload', [])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['file', 'morphable_type', 'morphable_id']);
+            ->assertJsonValidationErrors(['file', 'type']);
     }
 
     public function test_upload_rejects_oversized_file(): void
@@ -117,8 +114,7 @@ class AssetUploadTest extends TestCase
         $this->withToken($this->accessToken)
             ->postJson('/api/v1/assets/upload', [
                 'file' => $file,
-                'morphable_type' => 'user',
-                'morphable_id' => 1,
+                'type' => 'user',
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['file']);
@@ -131,8 +127,7 @@ class AssetUploadTest extends TestCase
         $this->withToken($this->accessToken)
             ->postJson('/api/v1/assets/upload', [
                 'file' => $file,
-                'morphable_type' => 'user',
-                'morphable_id' => 1,
+                'type' => 'user',
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['file']);

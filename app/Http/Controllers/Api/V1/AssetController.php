@@ -23,7 +23,7 @@ class AssetController extends Controller
 
         $asset = $this->uploadService->upload(
             file: $file,
-            morphableType: $request->string('morphable_type')->toString(),
+            type: $request->string('type')->toString(),
             userId: $request->user()?->getKey(),
             retainUntil: $request->date('retain_until'),
             isProtected: $request->boolean('is_protected'),

@@ -27,7 +27,7 @@ class AssetUploadService
      */
     public function upload(
         UploadedFile $file,
-        string $morphableType,
+        string $type,
         ?int $userId = null,
         ?Carbon $retainUntil = null,
         bool $isProtected = false,
@@ -36,11 +36,11 @@ class AssetUploadService
         $uuid = (string) Str::uuid();
         $extension = $file->getClientOriginalExtension() ?: $file->guessExtension() ?: 'bin';
 
-        // Path scalable: {env}/{morphable_type}/{year}/{month}/{uuid}.{ext}
+        // Path scalable: {env}/{type}/{year}/{month}/{uuid}.{ext}
         $folder = sprintf(
             '%s/%s/%s/%s',
             config('app.env', 'production'),
-            Str::slug($morphableType),
+            Str::slug($type),
             now()->format('Y'),
             now()->format('m'),
         );
@@ -70,7 +70,7 @@ class AssetUploadService
                 'mime_type' => $file->getMimeType() ?? $file->getClientMimeType(),
                 'size' => $file->getSize() ?: 0,
                 'checksum' => $this->checksum($file),
-                'category' => Str::slug($morphableType),
+                'category' => Str::slug($type),
                 'metadata' => $metadata,
                 'retain_until' => $retainUntil,
                 'is_protected' => $isProtected,
