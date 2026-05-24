@@ -33,9 +33,9 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogo(asset('images/logo-light.svg'))
             ->darkModeBrandLogo(asset('images/logo-dark.svg'))
             ->brandLogoHeight('2.5rem')
-            ->favicon(asset('favicon.ico'))
+            ->favicon(asset('favicon.svg'))
             ->colors([
-                'primary' => Color::Indigo,
+                'primary' => Color::Blue,
             ])
             ->databaseNotifications()
             ->discoverResources(app_path('Filament/Resources'), 'App\Filament\Resources')
