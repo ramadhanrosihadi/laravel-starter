@@ -91,6 +91,8 @@ php artisan db:seed --class=RegionSeeder
 # Langkah 4: Jalankan server dev lokal (Concurrently: serve, queue, logs, vite)
 # (Bagi pengguna Windows/non-make, gunakan ini. Untuk Linux/macOS dengan make: make dev)
 composer run dev
+
+Project siap diakses di [http://127.0.0.1:8000](http://127.0.0.1:8000)
 ```
 
 ---
